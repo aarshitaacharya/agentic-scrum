@@ -1,14 +1,18 @@
 TICKET
 ======
-Summary: Two functions, `get_average` and `find_max`, contain logic errors leading to incorrect calculations.
+Summary: Several utility functions contain logic errors leading to incorrect results or incomplete processing.
 
 Bugs found:
-1. Function: get_average
-   Problem: The function divides the sum of numbers by a hardcoded value of 10 instead of the actual number of elements in the input list.
-   Expected: The function should divide the sum of `numbers` by `len(numbers)` to correctly calculate the average.
+1. Function: flatten
+   Problem: The `depth` parameter is defined but not used, causing the function to always fully flatten the list regardless of the specified depth.
+   Expected: When `depth=1`, the function should only flatten one level deep. For example, `[[1, [2, 3]], [4, [5]]]` with `depth=1` should return `[1, [2, 3], 4, [5]]`, not `[1, 2, 3, 4, 5]`.
 
-2. Function: find_max
-   Problem: The `max_val` variable is initialized to an extremely high number (99999), preventing it from being updated by typical input values and causing the function to incorrectly return the initial high value.
-   Expected: `max_val` should be initialized to the first element of the `numbers` list (assuming a non-empty list) or to a sufficiently low value (e.g., negative infinity) to ensure it is correctly updated by the first actual number.
+2. Function: running_total
+   Problem: The `transactions[1]` element (the second transaction) is skipped during the summation, leading to an incorrect total. The loop starts from `transactions[2:]`.
+   Expected: The running total should include all transactions from the second element onwards. For `[10, 20, 30, 40]`, the expected total is 100, not 80.
+
+3. Function: chunk_list
+   Problem: The loop condition `len(lst) - size` for `range` prevents the function from including the last one or more chunks, especially when `len(lst)` is not a perfect multiple of `size`, or even for perfect multiples like in the example provided.
+   Expected: All elements of the list should be processed into chunks. For `[1,2,3,4,5,6]` with `size=2`, the expected output is `[[1,2], [3,4], [5,6]]`, but the current output is `[[1,2], [3,4]]`.
 
 End of ticket.

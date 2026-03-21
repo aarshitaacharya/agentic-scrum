@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agentic Scrum Office</title>
+  <style>
+    /* ── Reset + base ───────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+    h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #fff; }
+    .subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+
+    /* ── Office scene container ─────────────────────────────────── */
+    .office {
+      background: #f0ede6;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 720px;
+      padding: 24px 16px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Floor ──────────────────────────────────────────────────── */
+    .floor {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: #d9d4ca;
+      border-top: 4px solid #c8c2b6;
+    }
+
+    /* ── Desks row ──────────────────────────────────────────────── */
+    .desks {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      position: relative;
+      height: 220px;
+    }
+
+    /* ── Single desk + agent unit ───────────────────────────────── */
+    .desk-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      width: 160px;
+    }
+
+    /* Chat bubble above agent */
+    .bubble {
+      background: #fff;
+      border: 1.5px solid #ccc;
+      border-radius: 12px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #333;
+      max-width: 140px;
+      text-align: center;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      position: relative;
+      word-break: break-word;
+    }
+    .bubble.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+    /* little tail on the bubble */
+    .bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #ccc;
+    }
+
+    /* ── Agent SVG figure ───────────────────────────────────────── */
+    .agent-wrap {
+      transition: transform 0.7s ease;
+    }
+    .agent-wrap.bounce {
+      animation: bounce 0.5s ease 3;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+    @keyframes walk {
+      0%   { transform: translateX(0) scaleX(1); }
+      45%  { transform: translateX(var(--walk-dist)) scaleX(-1); }
+      55%  { transform: translateX(var(--walk-dist)) scaleX(-1); }
+      100% { transform: translateX(0) scaleX(1); }
+    }
+    .agent-wrap.walking {
+      animation: walk 1.8s ease forwards;
+    }
+
+    /* Desk surface */
+    .desk-surface {
+      width: 150px;
+      height: 14px;
+      background: #a09890;
+      border-radius: 4px 4px 0 0;
+      margin-top: 4px;
+    }
+    .desk-body {
+      width: 150px;
+      height: 55px;
+      background: #b8b0a4;
+      border-radius: 0 0 4px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Monitor on desk */
+    .monitor {
+      width: 54px;
+      height: 36px;
+      background: #4a90d9;
+      border-radius: 4px;
+      border: 2px solid #2c5f8a;
+      position: relative;
+      overflow: hidden;
+    }
+    .monitor-screen {
+      position: absolute;
+      inset: 2px;
+      background: #d4eaf7;
+      border-radius: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 3px;
+      overflow: hidden;
+    }
+    /* Animated typing lines on the screen */
+    .screen-line {
+      height: 3px;
+      border-radius: 2px;
+      background: #aaa;
+      transform-origin: left;
+      animation: type-line 1.5s ease-in-out infinite;
+    }
+    .screen-line:nth-child(1) { width: 80%; animation-delay: 0s; }
+    .screen-line:nth-child(2) { width: 60%; animation-delay: 0.3s; }
+    .screen-line:nth-child(3) { width: 70%; animation-delay: 0.6s; }
+    .screen-line.active { background: #1D9E75; }
+    @keyframes type-line {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+
+    /* Name badge below desk */
+    .agent-name {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      color: #fff;
+    }
+    .pm-color  { background: #0F6E56; }
+    .dev-color { background: #185FA5; }
+    .qa-color  { background: #854F0B; }
+
+    /* ── Status bar ─────────────────────────────────────────────── */
+    .status-bar {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin: 12px 0 0;
+      font-size: 12px;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+      transition: background 0.4s;
+    }
+    .status-dot.active { background: #1D9E75; animation: pulse 1s infinite; }
+    .status-dot.fail   { background: #E24B4A; }
+    .status-dot.pass   { background: #639922; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    #status-text { color: #ddd; font-weight: 500; }
+
+    /* ── Log panel ──────────────────────────────────────────────── */
+    .log-panel {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 12px;
+      background: #0d0d1a;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      height: 130px;
+      overflow-y: auto;
+    }
+    .log-line { margin: 2px 0; }
+    .log-line.pm  { color: #5DCAA5; }
+    .log-line.dev { color: #85B7EB; }
+    .log-line.qa  { color: #FAC775; }
+    .log-line.pass { color: #97C459; font-weight: bold; }
+    .log-line.fail { color: #F09595; font-weight: bold; }
+    .log-line.info { color: #888; }
+
+    /* ── Attempt badge ──────────────────────────────────────────── */
+    .attempt-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #2a2a3e;
+      color: #888;
+      margin-left: auto;
+    }
+
+    /* ── Pass/fail flash overlay on office ─────────────────────── */
+    .office-flash {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .office-flash.pass { background: rgba(99,153,34,0.15); opacity: 1; }
+    .office-flash.fail { background: rgba(226,75,74,0.15); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<h1>Agentic Scrum Office</h1>
+<p class="subtitle">Watching the agents live — polling workspace/state.json every second</p>
+
+<div class="office" id="office">
+  <div class="office-flash" id="flash"></div>
+  <div class="desks">
+
+    <!-- PM desk -->
+    <div class="desk-unit" id="unit-pm">
+      <div class="bubble" id="bubble-pm">idle</div>
+      <div class="agent-wrap" id="agent-pm">
+        <!-- PM agent SVG (green shirt) -->
+        <svg width="60" height="80" viewBox="0 0 60 80">
+          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#FDDBB4"/>
+          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#2D7D46"/>
+          <rect x="16" y="33" width="28" height="24" rx="6" fill="#1D9E75"/>
+          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#FDDBB4"/>
+          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#FDDBB4"/>
+          <circle cx="26" cy="22" r="2" fill="#333"/>
+          <circle cx="34" cy="22" r="2" fill="#333"/>
+          <path d="M26 28 Q30 31 34 28" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <rect x="17" y="56" width="26" height="22" rx="4" fill="#0F6E56"/>
+          <rect x="13" y="76" width="13" height="4" rx="2" fill="#FDDBB4"/>
+          <rect x="34" y="76" width="13" height="4" rx="2" fill="#FDDBB4"/>
+        </svg>
+      </div>
+      <div class="desk-surface"></div>
+      <div class="desk-body">
+        <div class="monitor">
+          <div class="monitor-screen" id="screen-pm">
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="agent-name pm-color">PM</div>
+    </div>
+
+    <!-- Dev desk -->
+    <div class="desk-unit" id="unit-dev">
+      <div class="bubble" id="bubble-dev">idle</div>
+      <div class="agent-wrap" id="agent-dev">
+        <!-- Dev agent SVG (blue shirt, glasses) -->
+        <svg width="60" height="80" viewBox="0 0 60 80">
+          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#F5C5A3"/>
+          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#185FA5"/>
+          <rect x="16" y="33" width="28" height="24" rx="6" fill="#378ADD"/>
+          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#F5C5A3"/>
+          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#F5C5A3"/>
+          <circle cx="26" cy="22" r="2" fill="#333"/>
+          <circle cx="34" cy="22" r="2" fill="#333"/>
+          <!-- glasses -->
+          <rect x="21" y="19" width="8" height="5" rx="2" fill="none" stroke="#555" stroke-width="1"/>
+          <rect x="31" y="19" width="8" height="5" rx="2" fill="none" stroke="#555" stroke-width="1"/>
+          <line x1="29" y1="21" x2="31" y2="21" stroke="#555" stroke-width="1"/>
+          <path d="M26 28 Q30 31 34 28" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <rect x="17" y="56" width="26" height="22" rx="4" fill="#0C447C"/>
+          <rect x="13" y="76" width="13" height="4" rx="2" fill="#F5C5A3"/>
+          <rect x="34" y="76" width="13" height="4" rx="2" fill="#F5C5A3"/>
+        </svg>
+      </div>
+      <div class="desk-surface"></div>
+      <div class="desk-body">
+        <div class="monitor">
+          <div class="monitor-screen" id="screen-dev">
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="agent-name dev-color">Dev</div>
+    </div>
+
+    <!-- QA desk -->
+    <div class="desk-unit" id="unit-qa">
+      <div class="bubble" id="bubble-qa">idle</div>
+      <div class="agent-wrap" id="agent-qa">
+        <!-- QA agent SVG (amber shirt, frown = serious) -->
+        <svg width="60" height="80" viewBox="0 0 60 80">
+          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#FADBB4"/>
+          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#854F0B"/>
+          <rect x="16" y="33" width="28" height="24" rx="6" fill="#BA7517"/>
+          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#FADBB4"/>
+          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#FADBB4"/>
+          <circle cx="26" cy="22" r="2" fill="#333"/>
+          <circle cx="34" cy="22" r="2" fill="#333"/>
+          <!-- QA has a serious expression -->
+          <path d="M26 29 Q30 26 34 29" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <rect x="17" y="56" width="26" height="22" rx="4" fill="#633806"/>
+          <rect x="13" y="76" width="13" height="4" rx="2" fill="#FADBB4"/>
+          <rect x="34" y="76" width="13" height="4" rx="2" fill="#FADBB4"/>
+        </svg>
+      </div>
+      <div class="desk-surface"></div>
+      <div class="desk-body">
+        <div class="monitor">
+          <div class="monitor-screen" id="screen-qa">
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+            <div class="screen-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="agent-name qa-color">QA</div>
+    </div>
+
+  </div><!-- .desks -->
+  <div class="floor"></div>
+</div><!-- .office -->
+
+<!-- Status bar -->
+<div class="status-bar" style="width:100%;max-width:720px;">
+  <div class="status-dot" id="status-dot"></div>
+  <span id="status-text">Waiting for orchestrator to start...</span>
+  <span class="attempt-badge" id="attempt-badge"></span>
+</div>
+
+<!-- Log panel -->
+<div class="log-panel" id="log"></div>
+
+<script>
+  // ── State tracking ────────────────────────────────────────────────────────
+  let lastTs   = 0;      // last state.json timestamp — skip stale reads
+  let activeAgent = "";  // which agent is currently highlighted
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const agents  = ["pm", "dev", "qa"];
+  const bubbles = Object.fromEntries(agents.map(a => [a, document.getElementById("bubble-" + a)]));
+  const agentEls= Object.fromEntries(agents.map(a => [a, document.getElementById("agent-"  + a)]));
+  const screens = Object.fromEntries(agents.map(a => [a, document.getElementById("screen-" + a)]));
+  const logEl   = document.getElementById("log");
+  const statusDot  = document.getElementById("status-dot");
+  const statusText = document.getElementById("status-text");
+  const attemptBadge = document.getElementById("attempt-badge");
+  const flash   = document.getElementById("flash");
+
+  // ── Log helper ────────────────────────────────────────────────────────────
+  function addLog(text, cls = "info") {
+    const line = document.createElement("div");
+    line.className = "log-line " + cls;
+    line.textContent = "> " + text;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // ── Activate / deactivate agent visuals ──────────────────────────────────
+  function activateAgent(agent) {
+    if (agent === activeAgent) return;
+    // Deactivate all first
+    agents.forEach(a => {
+      bubbles[a].classList.remove("visible");
+      screens[a].querySelectorAll(".screen-line").forEach(l => l.classList.remove("active"));
+    });
+    activeAgent = agent;
+    if (!agents.includes(agent)) return;
+
+    // Bounce the active agent
+    const el = agentEls[agent];
+    el.classList.remove("bounce");
+    void el.offsetWidth;   // force reflow to restart animation
+    el.classList.add("bounce");
+    el.addEventListener("animationend", () => el.classList.remove("bounce"), { once: true });
+
+    // Light up screen lines
+    screens[agent].querySelectorAll(".screen-line").forEach(l => l.classList.add("active"));
+  }
+
+  function showBubble(agent, text) {
+    const b = bubbles[agent];
+    b.textContent = text;
+    b.classList.add("visible");
+    // Colour the bubble border to match the agent
+    const colors = { pm: "#1D9E75", dev: "#378ADD", qa: "#BA7517" };
+    b.style.borderColor = colors[agent] || "#ccc";
+  }
+
+  function hideAllBubbles() {
+    agents.forEach(a => bubbles[a].classList.remove("visible"));
+  }
+
+  // ── QA walks to Dev's desk when re-pinging ────────────────────────────────
+  function triggerWalk() {
+    const qaEl = agentEls["qa"];
+    // QA is rightmost, Dev is centre — roughly 160px apart
+    qaEl.style.setProperty("--walk-dist", "-160px");
+    qaEl.classList.add("walking");
+    qaEl.addEventListener("animationend", () => qaEl.classList.remove("walking"), { once: true });
+  }
+
+  // ── Apply a state update from state.json ──────────────────────────────────
+  let prevVerdict = "";
+  let prevAgent   = "";
+
+  function applyState(state) {
+    const { agent, status, message, attempt, verdict, ts } = state;
+    if (ts === lastTs) return;   // no change
+    lastTs = ts;
+
+    // Status bar
+    statusText.textContent = `[${agent.toUpperCase()}] ${status}`;
+    attemptBadge.textContent = attempt > 1 ? `attempt ${attempt}` : "";
+
+    // Dot colour
+    statusDot.className = "status-dot";
+    if (agent === "done") {
+      statusDot.classList.add(verdict === "pass" ? "pass" : "fail");
+    } else if (agent !== "idle") {
+      statusDot.classList.add("active");
+    }
+
+    // Flash on verdict change
+    if (verdict && verdict !== prevVerdict) {
+      flash.className = "office-flash " + verdict;
+      setTimeout(() => flash.className = "office-flash", 1500);
+    }
+    prevVerdict = verdict;
+
+    // Activate agent + bubble
+    if (agents.includes(agent)) {
+      activateAgent(agent);
+      showBubble(agent, status);
+
+      // If QA is failing and agent just switched TO qa from dev — walk!
+      if (agent === "qa" && prevAgent === "dev" && attempt > 1) {
+        triggerWalk();
+      }
+      prevAgent = agent;
+    } else {
+      hideAllBubbles();
+      activeAgent = "";
+    }
+
+    // Log
+    const cls = agent === "done"
+      ? (verdict === "pass" ? "pass" : "fail")
+      : (agents.includes(agent) ? agent : "info");
+    addLog(message || status, cls);
+  }
+
+  // ── Poll state.json ───────────────────────────────────────────────────────
+  async function poll() {
+    try {
+      // Cache-bust with timestamp so browser doesn't serve a stale file
+      const res = await fetch("../workspace/state.json?t=" + Date.now());
+      if (res.ok) {
+        const state = await res.json();
+        applyState(state);
+      }
+    } catch (e) {
+      // File not found or parse error — orchestrator hasn't started yet
+    }
+    setTimeout(poll, 1000);   // poll every second
+  }
+
+  poll();
+  addLog("UI ready — run python orchestrator.py to start", "info");
+</script>
+</body>
+</html>

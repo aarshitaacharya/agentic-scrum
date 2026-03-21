@@ -1,0 +1,7 @@
+QA REVIEW
+=========
+Bug 1 check: The `flatten` function now correctly uses the `depth` parameter in its conditional logic (`if isinstance(item, list) and depth > 0:`) and decrements `depth` in recursive calls. This ensures that flattening only occurs up to the specified depth. The example `[[1, [2, 3]], [4, [5]]]` with `depth=1` would correctly return `[1, [2, 3], 4, [5]]`. — FIXED
+Bug 2 check: The `running_total` function now correctly initializes `total` with `transactions[0]` and iterates through `transactions[1:]`, ensuring that all transactions from the second element onwards are included in the sum. The example `[10, 20, 30, 40]` would correctly return `100`. — FIXED
+Bug 3 check: The `chunk_list` function's loop condition `for i in range(0, len(lst), size):` now correctly iterates through the entire list, ensuring that all elements are processed into chunks, including the last one or more chunks, even when `len(lst)` is not a perfect multiple of `size`. The example `[1,2,3,4,5,6]` with `size=2` would correctly return `[[1,2], [3,4], [5,6]]`. — FIXED
+
+Verdict: PASS

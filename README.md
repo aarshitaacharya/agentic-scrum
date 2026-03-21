@@ -1,51 +1,52 @@
 # Agentic Scrum
 
 A tiny multi-agent system where PM, Dev, and QA agents collaborate to fix bugs.
-Built with Gemini 2.0 Flash (free tier). No frameworks, just plain Python.
+Built with Gemini 2.5 Flash (free tier). No frameworks, just plain Python + one HTML file.
 
 ## Project structure
 
 ```
 agentic-scrum/
-├── orchestrator.py          # main script — run this
+├── orchestrator.py       # main script — run this
 ├── requirements.txt
 ├── agents/
-│   └── pm_prompt.py         # PM agent's system prompt (more agents added in Phase 2)
-└── workspace/
-    ├── buggy_script.py      # the file being reviewed/fixed
-    ├── ticket.txt           # written by PM agent
-    ├── patch.py             # written by Dev agent (Phase 2)
-    └── test_result.txt      # written by QA agent (Phase 2)
+│   ├── pm_prompt.py      # PM agent personality + prompt templates
+│   ├── dev_prompt.py     # Dev agent personality + prompt templates
+│   └── qa_prompt.py      # QA agent personality + prompt templates
+├── workspace/
+│   ├── buggy_script.py   # the file being reviewed/fixed (swap this out)
+│   ├── ticket.txt        # written by PM
+│   ├── patched_script.py # written by Dev
+│   ├── qa_review.txt     # written by QA
+│   └── state.json        # written by orchestrator, read by UI
+└── ui/
+    └── index.html        # the desk animation UI
 ```
 
 ## Setup
 
 1. Install dependencies:
-   ```
    pip install -r requirements.txt
-   ```
 
 2. Get a free Gemini API key at https://aistudio.google.com/app/apikey
 
-3. Set your key as an environment variable:
-   ```
-   # Mac/Linux
-   export GEMINI_API_KEY="your-key-here"
+3. Set your key:
+   export GEMINI_API_KEY="your-key-here"   # Mac/Linux
+   set GEMINI_API_KEY=your-key-here        # Windows
 
-   # Windows
-   set GEMINI_API_KEY=your-key-here
-   ```
-   Or just paste it directly into `orchestrator.py` (line with PASTE_YOUR_KEY_HERE) for quick local testing.
+## Running
 
-4. Run Phase 1:
-   ```
+You need two terminals open at the same time.
+
+Terminal 1 — serve the UI (must be run from the project root):
+   python -m http.server 8000
+
+Terminal 2 — run the pipeline:
    python orchestrator.py
-   ```
 
-## Phase 1 checkpoint
+Then open http://localhost:8000/ui/index.html in your browser.
+Start watching, then run the orchestrator — agents will animate as they work.
 
-The PM agent should find both bugs in `workspace/buggy_script.py`:
-- `get_average` divides by 10 instead of `len(numbers)`
-- `find_max` starts with 99999 so it never updates
-
-If `workspace/ticket.txt` mentions both — Phase 1 is done.
+## Swapping in your own script
+Replace workspace/buggy_script.py with any single-file Python script.
+The agents will figure out the rest.
