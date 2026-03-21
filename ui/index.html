@@ -4,516 +4,532 @@
   <meta charset="UTF-8">
   <title>Agentic Scrum Office</title>
   <style>
-    /* ── Reset + base ───────────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: #1e1e2e;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 32px;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px;
     }
-    h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #fff; }
-    .subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+    h1 { color: #cdd6f4; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3px; }
+    .subtitle { color: #45475a; font-size: 10px; letter-spacing: 2px; margin-bottom: 16px; }
 
-    /* ── Office scene container ─────────────────────────────────── */
+    /* ── Top-down office floor ──────────────────────────────── */
     .office {
-      background: #f0ede6;
-      border-radius: 16px;
       width: 100%;
-      max-width: 720px;
-      padding: 24px 16px 16px;
+      max-width: 760px;
+      background: #e8e2d8;  /* floor tiles */
+      border: 3px solid #45475a;
       position: relative;
-      overflow: hidden;
+      /* tile grid on floor */
+      background-image:
+        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 12px;
     }
 
-    /* ── Floor ──────────────────────────────────────────────────── */
-    .floor {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 60px;
-      background: #d9d4ca;
-      border-top: 4px solid #c8c2b6;
-    }
-
-    /* ── Desks row ──────────────────────────────────────────────── */
-    .desks {
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-end;
-      position: relative;
-      height: 220px;
-    }
-
-    /* ── Single desk + agent unit ───────────────────────────────── */
-    .desk-unit {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      width: 160px;
-    }
-
-    /* Chat bubble above agent */
-    .bubble {
-      background: #fff;
-      border: 1.5px solid #ccc;
-      border-radius: 12px;
-      padding: 6px 10px;
-      font-size: 11px;
-      color: #333;
-      max-width: 140px;
-      text-align: center;
-      min-height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 6px;
-      opacity: 0;
-      transform: scale(0.8);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      position: relative;
-      word-break: break-word;
-    }
-    .bubble.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-    /* little tail on the bubble */
-    .bubble::after {
+    /* top wall strip */
+    .office::before {
       content: '';
       position: absolute;
-      bottom: -8px;
+      top: 0; left: 0; right: 0;
+      height: 8px;
+      background: repeating-linear-gradient(90deg, #8a8070 0px, #8a8070 20px, #a09080 20px, #a09080 40px);
+      border-bottom: 2px solid #6a6050;
+    }
+
+    /* ── Individual desk pods ───────────────────────────────── */
+    .pod {
+      background: #d8d0c4;
+      border: 2px solid #a09080;
+      border-radius: 2px;
+      padding: 10px 8px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: background 0.3s, border-color 0.3s;
+      min-height: 260px;
+    }
+    .pod.active {
+      background: #e8e4dc;
+      border-color: #6a9060;
+      box-shadow: inset 0 0 0 1px #6a9060;
+    }
+    .pod.flash-pass { animation: fpass 0.9s ease; }
+    .pod.flash-fail { animation: ffail 0.9s ease; }
+    @keyframes fpass { 40% { background: #c4e0bc; border-color: #4a8040; } }
+    @keyframes ffail { 40% { background: #e8c0c0; border-color: #a04040; } }
+
+    /* partition wall feel — top border thicker */
+    .pod::before {
+      content: attr(data-label);
+      position: absolute;
+      top: -2px; left: -2px; right: -2px;
+      height: 18px;
+      background: #8a8070;
+      border-radius: 2px 2px 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; letter-spacing: 2px; color: #e8e4dc;
+      text-transform: uppercase;
+      padding-top: 2px;
+    }
+
+    /* ── Desk (top-down) ────────────────────────────────────── */
+    .desk-top {
+      width: 100%;
+      background: #c8a878;
+      border: 2px solid #a08858;
+      border-radius: 2px;
+      margin-top: 18px;   /* space for partition label */
+      padding: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      position: relative;
+    }
+    /* desk edge highlight = depth */
+    .desk-top::after {
+      content: '';
+      position: absolute;
+      bottom: -5px; left: 2px; right: 2px;
+      height: 5px;
+      background: #906838;
+      border-radius: 0 0 2px 2px;
+    }
+
+    /* monitor from top */
+    .monitor {
+      width: 56px; height: 38px;
+      background: #1e1e2e;
+      border: 2px solid #45475a;
+      border-radius: 1px;
+      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 4px 5px;
+      gap: 3px;
+    }
+    .sline {
+      height: 3px; border-radius: 1px;
+      background: #313244;
+      transition: background 0.3s;
+    }
+
+    /* keyboard from top */
+    .keyboard {
+      width: 36px; height: 14px;
+      background: #d4d0c8;
+      border: 1px solid #a8a498;
+      border-radius: 1px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 1px;
+      padding: 2px;
+      align-self: flex-end;
+    }
+    .key { background: #b8b4ac; border-radius: 1px; }
+
+    /* mug from top */
+    .mug-top {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.2);
+      align-self: flex-start;
+    }
+
+    /* papers from top */
+    .paper-stack {
+      width: 22px; height: 16px;
+      background: #f5f0e8;
+      border: 1px solid #c8c0b0;
+      position: relative;
+      align-self: flex-start;
+    }
+    .paper-stack::before {
+      content: '';
+      position: absolute;
+      top: 3px; left: 2px; right: 2px;
+      height: 2px; background: #c8c0b0;
+      box-shadow: 0 4px 0 #c8c0b0;
+    }
+
+    /* office chair from top */
+    .chair {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #c05050;
+      border: 2px solid #903030;
+      position: absolute;
+      bottom: -42px;
       left: 50%;
       transform: translateX(-50%);
-      border: 4px solid transparent;
-      border-top-color: #ccc;
+    }
+    .chair::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #d06060;
     }
 
-    /* ── Agent SVG figure ───────────────────────────────────────── */
-    .agent-wrap {
-      transition: transform 0.7s ease;
-    }
-    .agent-wrap.bounce {
-      animation: bounce 0.5s ease 3;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-10px); }
-    }
-    @keyframes walk {
-      0%   { transform: translateX(0) scaleX(1); }
-      45%  { transform: translateX(var(--walk-dist)) scaleX(-1); }
-      55%  { transform: translateX(var(--walk-dist)) scaleX(-1); }
-      100% { transform: translateX(0) scaleX(1); }
-    }
-    .agent-wrap.walking {
-      animation: walk 1.8s ease forwards;
+    /* ── Character sprite area ──────────────────────────────── */
+    .char-area {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      margin-top: 48px;   /* below the chair */
+      flex: 1;
+      position: relative;
     }
 
-    /* Desk surface */
-    .desk-surface {
-      width: 150px;
-      height: 14px;
-      background: #a09890;
-      border-radius: 4px 4px 0 0;
-      margin-top: 4px;
+    .sprite {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      height: 110px;
+      width: auto;
+      /* face toward desk = face upward in top-down = we show from behind */
+      /* slight perspective tilt: scale Y down so they look top-down */
+      transform: scaleX(-1);
+      display: block;
+      position: relative;
+      z-index: 2;
     }
-    .desk-body {
-      width: 150px;
-      height: 55px;
-      background: #b8b0a4;
-      border-radius: 0 0 4px 4px;
+    .sprite.bounce {
+      animation: spr-bounce 0.12s steps(1) 7;
+    }
+    @keyframes spr-bounce {
+      0%,100% { transform: scaleX(-1) translateY(0); }
+      50%      { transform: scaleX(-1) translateY(-10px); }
+    }
+    /* QA walks across to Dev */
+    .sprite.walking {
+      animation: spr-walk 2s ease forwards;
+      z-index: 10;
+    }
+    @keyframes spr-walk {
+      0%   { transform: scaleX(-1) translateX(0); }
+      35%  { transform: scaleX(1) translateX(-90px); }
+      60%  { transform: scaleX(1) translateX(-200px); }
+      78%  { transform: scaleX(1) translateX(-200px); }
+      92%  { transform: scaleX(1) translateX(-90px); }
+      100% { transform: scaleX(-1) translateX(0); }
+    }
+
+    /* ── Bubble above character ─────────────────────────────── */
+    .bubble {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: #fff;
+      border: 2px solid #45475a;
+      padding: 4px 8px 10px;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      color: #1e1e2e;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 20;
+      clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 60% 70%, 55% 100%, 50% 70%, 0% 70%);
+    }
+    .bubble.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* ── Name label ─────────────────────────────────────────── */
+    .pod-name {
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: #fff; margin-top: 6px;
+      padding: 2px 8px; border-radius: 1px;
+    }
+
+    /* ── Meeting room (bottom span) ─────────────────────────── */
+    .meeting-room {
+      grid-column: 1 / -1;
+      background: #ccc8bc;
+      border: 2px solid #a09080;
+      border-radius: 2px;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    /* Monitor on desk */
-    .monitor {
-      width: 54px;
-      height: 36px;
-      background: #4a90d9;
-      border-radius: 4px;
-      border: 2px solid #2c5f8a;
+      gap: 16px;
       position: relative;
-      overflow: hidden;
+      min-height: 70px;
     }
-    .monitor-screen {
+    .meeting-room::before {
+      content: 'CONFERENCE ROOM';
       position: absolute;
-      inset: 2px;
-      background: #d4eaf7;
-      border-radius: 2px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 3px;
-      overflow: hidden;
+      top: 4px; left: 8px;
+      font-size: 7px; letter-spacing: 2px; color: #8a8070;
     }
-    /* Animated typing lines on the screen */
-    .screen-line {
-      height: 3px;
-      border-radius: 2px;
-      background: #aaa;
-      transform-origin: left;
-      animation: type-line 1.5s ease-in-out infinite;
+    /* conference table from top */
+    .conf-table {
+      width: 180px; height: 38px;
+      background: #c8a878;
+      border: 2px solid #a08858;
+      border-radius: 3px;
+      position: relative;
     }
-    .screen-line:nth-child(1) { width: 80%; animation-delay: 0s; }
-    .screen-line:nth-child(2) { width: 60%; animation-delay: 0.3s; }
-    .screen-line:nth-child(3) { width: 70%; animation-delay: 0.6s; }
-    .screen-line.active { background: #1D9E75; }
-    @keyframes type-line {
-      0%, 100% { opacity: 0.4; }
-      50%       { opacity: 1; }
+    .conf-table::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 4px; right: 4px;
+      height: 4px; background: #906838;
+      border-radius: 0 0 2px 2px;
     }
-
-    /* Name badge below desk */
-    .agent-name {
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 6px;
-      padding: 2px 10px;
-      border-radius: 10px;
-      color: #fff;
-    }
-    .pm-color  { background: #0F6E56; }
-    .dev-color { background: #185FA5; }
-    .qa-color  { background: #854F0B; }
-
-    /* ── Status bar ─────────────────────────────────────────────── */
-    .status-bar {
-      background: #1a1a2e;
-      border-radius: 8px;
-      padding: 8px 14px;
-      margin: 12px 0 0;
-      font-size: 12px;
-      color: #aaa;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .status-dot {
-      width: 8px; height: 8px;
+    /* chairs around table */
+    .conf-chair {
+      width: 18px; height: 18px;
       border-radius: 50%;
-      background: #555;
-      flex-shrink: 0;
-      transition: background 0.4s;
-    }
-    .status-dot.active { background: #1D9E75; animation: pulse 1s infinite; }
-    .status-dot.fail   { background: #E24B4A; }
-    .status-dot.pass   { background: #639922; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
-    }
-    #status-text { color: #ddd; font-weight: 500; }
-
-    /* ── Log panel ──────────────────────────────────────────────── */
-    .log-panel {
-      width: 100%;
-      max-width: 720px;
-      margin-top: 12px;
-      background: #0d0d1a;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-family: monospace;
-      font-size: 12px;
-      height: 130px;
-      overflow-y: auto;
-    }
-    .log-line { margin: 2px 0; }
-    .log-line.pm  { color: #5DCAA5; }
-    .log-line.dev { color: #85B7EB; }
-    .log-line.qa  { color: #FAC775; }
-    .log-line.pass { color: #97C459; font-weight: bold; }
-    .log-line.fail { color: #F09595; font-weight: bold; }
-    .log-line.info { color: #888; }
-
-    /* ── Attempt badge ──────────────────────────────────────────── */
-    .attempt-badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: #2a2a3e;
-      color: #888;
-      margin-left: auto;
+      background: #c05050;
+      border: 2px solid #903030;
     }
 
-    /* ── Pass/fail flash overlay on office ─────────────────────── */
-    .office-flash {
-      position: absolute;
-      inset: 0;
-      border-radius: 16px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.4s;
+    /* ── Status + terminal ──────────────────────────────────── */
+    .statusbar {
+      width: 100%; max-width: 760px;
+      background: #181825;
+      border: 2px solid #313244; border-top: none;
+      padding: 7px 14px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 10px; color: #585b70; letter-spacing: 1px;
     }
-    .office-flash.pass { background: rgba(99,153,34,0.15); opacity: 1; }
-    .office-flash.fail { background: rgba(226,75,74,0.15); opacity: 1; }
+    .led { width: 8px; height: 8px; background: #313244; border: 1px solid #45475a; flex-shrink: 0; }
+    .led.on   { background: #a6e3a1; box-shadow: 0 0 5px #a6e3a1; animation: blink 1s infinite; }
+    .led.pass { background: #a6e3a1; }
+    .led.fail { background: #f38ba8; }
+    @keyframes blink { 50% { opacity: 0.4; } }
+    #status-txt { color: #cdd6f4; }
+    .apill { margin-left: auto; font-size: 9px; padding: 1px 8px; border: 1px solid #313244; color: #585b70; }
+
+    .terminal {
+      width: 100%; max-width: 760px;
+      background: #11111b;
+      border: 2px solid #313244; border-top: none;
+      padding: 10px 14px; height: 120px; overflow-y: auto;
+      font-size: 11px; line-height: 1.8;
+    }
+    .terminal::-webkit-scrollbar { width: 4px; }
+    .terminal::-webkit-scrollbar-thumb { background: #313244; }
   </style>
 </head>
 <body>
-
 <h1>Agentic Scrum Office</h1>
-<p class="subtitle">Watching the agents live — polling workspace/state.json every second</p>
+<p class="subtitle">// dunder mifflin tech — scranton branch</p>
 
-<div class="office" id="office">
-  <div class="office-flash" id="flash"></div>
-  <div class="desks">
+<div class="office">
 
-    <!-- PM desk -->
-    <div class="desk-unit" id="unit-pm">
-      <div class="bubble" id="bubble-pm">idle</div>
-      <div class="agent-wrap" id="agent-pm">
-        <!-- PM agent SVG (green shirt) -->
-        <svg width="60" height="80" viewBox="0 0 60 80">
-          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#FDDBB4"/>
-          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#2D7D46"/>
-          <rect x="16" y="33" width="28" height="24" rx="6" fill="#1D9E75"/>
-          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#FDDBB4"/>
-          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#FDDBB4"/>
-          <circle cx="26" cy="22" r="2" fill="#333"/>
-          <circle cx="34" cy="22" r="2" fill="#333"/>
-          <path d="M26 28 Q30 31 34 28" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-          <rect x="17" y="56" width="26" height="22" rx="4" fill="#0F6E56"/>
-          <rect x="13" y="76" width="13" height="4" rx="2" fill="#FDDBB4"/>
-          <rect x="34" y="76" width="13" height="4" rx="2" fill="#FDDBB4"/>
-        </svg>
+  <!-- PM Pod -->
+  <div class="pod" id="pod-pm" data-label="PM — Michael Scott">
+    <div class="desk-top">
+      <div class="monitor" id="mon-pm">
+        <div class="sline" id="pm-l1" style="width:80%"></div>
+        <div class="sline" id="pm-l2" style="width:55%"></div>
+        <div class="sline" id="pm-l3" style="width:70%"></div>
       </div>
-      <div class="desk-surface"></div>
-      <div class="desk-body">
-        <div class="monitor">
-          <div class="monitor-screen" id="screen-pm">
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-          </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+        <div class="mug-top" style="background:#e74c3c;"></div>
+      </div>
+      <div class="paper-stack"></div>
+      <div class="chair"></div>
+    </div>
+    <div class="char-area">
+      <div class="bubble" id="bub-pm">IDLE</div>
+      <img class="sprite" id="spr-pm" alt="Michael"/>
+    </div>
+    <div class="pod-name" style="background:#0F6E56;">PM</div>
+  </div>
+
+  <!-- Dev Pod -->
+  <div class="pod" id="pod-dev" data-label="Dev — Jim Halpert">
+    <div class="desk-top">
+      <div class="monitor" id="mon-dev">
+        <div class="sline" id="dev-l1" style="width:90%"></div>
+        <div class="sline" id="dev-l2" style="width:60%"></div>
+        <div class="sline" id="dev-l3" style="width:75%"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+        <div style="width:14px;height:10px;background:#f1c40f;border:1px solid #b7950b;font-size:5px;color:#7a6000;display:flex;align-items:center;justify-content:center;letter-spacing:0;">note</div>
+      </div>
+      <div class="mug-top" style="background:#27ae60;margin-top:2px;"></div>
+      <div class="chair"></div>
+    </div>
+    <div class="char-area">
+      <div class="bubble" id="bub-dev">IDLE</div>
+      <img class="sprite" id="spr-dev" alt="Jim"/>
+    </div>
+    <div class="pod-name" style="background:#185FA5;">Dev</div>
+  </div>
+
+  <!-- QA Pod -->
+  <div class="pod" id="pod-qa" data-label="QA — Dwight Schrute">
+    <div class="desk-top">
+      <div class="monitor" id="mon-qa">
+        <div class="sline" id="qa-l1" style="width:70%"></div>
+        <div class="sline" id="qa-l2" style="width:85%"></div>
+        <div class="sline" id="qa-l3" style="width:50%"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+        <div style="display:flex;gap:2px;">
+          <div class="paper-stack" style="width:16px;height:12px;"></div>
+          <div class="paper-stack" style="width:16px;height:12px;transform:rotate(4deg);"></div>
         </div>
       </div>
-      <div class="agent-name pm-color">PM</div>
+      <div style="width:10px;height:16px;background:#e74c3c;border:1px solid #c0392b;margin-top:2px;"></div>
+      <div class="chair"></div>
     </div>
-
-    <!-- Dev desk -->
-    <div class="desk-unit" id="unit-dev">
-      <div class="bubble" id="bubble-dev">idle</div>
-      <div class="agent-wrap" id="agent-dev">
-        <!-- Dev agent SVG (blue shirt, glasses) -->
-        <svg width="60" height="80" viewBox="0 0 60 80">
-          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#F5C5A3"/>
-          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#185FA5"/>
-          <rect x="16" y="33" width="28" height="24" rx="6" fill="#378ADD"/>
-          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#F5C5A3"/>
-          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#F5C5A3"/>
-          <circle cx="26" cy="22" r="2" fill="#333"/>
-          <circle cx="34" cy="22" r="2" fill="#333"/>
-          <!-- glasses -->
-          <rect x="21" y="19" width="8" height="5" rx="2" fill="none" stroke="#555" stroke-width="1"/>
-          <rect x="31" y="19" width="8" height="5" rx="2" fill="none" stroke="#555" stroke-width="1"/>
-          <line x1="29" y1="21" x2="31" y2="21" stroke="#555" stroke-width="1"/>
-          <path d="M26 28 Q30 31 34 28" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-          <rect x="17" y="56" width="26" height="22" rx="4" fill="#0C447C"/>
-          <rect x="13" y="76" width="13" height="4" rx="2" fill="#F5C5A3"/>
-          <rect x="34" y="76" width="13" height="4" rx="2" fill="#F5C5A3"/>
-        </svg>
-      </div>
-      <div class="desk-surface"></div>
-      <div class="desk-body">
-        <div class="monitor">
-          <div class="monitor-screen" id="screen-dev">
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-          </div>
-        </div>
-      </div>
-      <div class="agent-name dev-color">Dev</div>
+    <div class="char-area">
+      <div class="bubble" id="bub-qa">IDLE</div>
+      <img class="sprite" id="spr-qa" alt="Dwight"/>
     </div>
+    <div class="pod-name" style="background:#854F0B;">QA</div>
+  </div>
 
-    <!-- QA desk -->
-    <div class="desk-unit" id="unit-qa">
-      <div class="bubble" id="bubble-qa">idle</div>
-      <div class="agent-wrap" id="agent-qa">
-        <!-- QA agent SVG (amber shirt, frown = serious) -->
-        <svg width="60" height="80" viewBox="0 0 60 80">
-          <ellipse cx="30" cy="22" rx="14" ry="14" fill="#FADBB4"/>
-          <ellipse cx="30" cy="16" rx="12" ry="9" fill="#854F0B"/>
-          <rect x="16" y="33" width="28" height="24" rx="6" fill="#BA7517"/>
-          <ellipse cx="22" cy="43" rx="5" ry="6" fill="#FADBB4"/>
-          <ellipse cx="38" cy="43" rx="5" ry="6" fill="#FADBB4"/>
-          <circle cx="26" cy="22" r="2" fill="#333"/>
-          <circle cx="34" cy="22" r="2" fill="#333"/>
-          <!-- QA has a serious expression -->
-          <path d="M26 29 Q30 26 34 29" stroke="#a0522d" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-          <rect x="17" y="56" width="26" height="22" rx="4" fill="#633806"/>
-          <rect x="13" y="76" width="13" height="4" rx="2" fill="#FADBB4"/>
-          <rect x="34" y="76" width="13" height="4" rx="2" fill="#FADBB4"/>
-        </svg>
-      </div>
-      <div class="desk-surface"></div>
-      <div class="desk-body">
-        <div class="monitor">
-          <div class="monitor-screen" id="screen-qa">
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-            <div class="screen-line"></div>
-          </div>
-        </div>
-      </div>
-      <div class="agent-name qa-color">QA</div>
+  <!-- Conference room bottom -->
+  <div class="meeting-room">
+    <div class="conf-chair"></div>
+    <div class="conf-chair"></div>
+    <div class="conf-table"></div>
+    <div class="conf-chair"></div>
+    <div class="conf-chair"></div>
+    <div style="position:absolute;right:16px;bottom:8px;display:flex;gap:6px;">
+      <!-- plant top-down -->
+      <div style="width:16px;height:16px;border-radius:50%;background:#27ae60;border:2px solid #1e8449;"></div>
+      <div style="width:16px;height:16px;border-radius:50%;background:#2ecc71;border:2px solid #27ae60;"></div>
     </div>
+  </div>
 
-  </div><!-- .desks -->
-  <div class="floor"></div>
-</div><!-- .office -->
-
-<!-- Status bar -->
-<div class="status-bar" style="width:100%;max-width:720px;">
-  <div class="status-dot" id="status-dot"></div>
-  <span id="status-text">Waiting for orchestrator to start...</span>
-  <span class="attempt-badge" id="attempt-badge"></span>
 </div>
 
-<!-- Log panel -->
-<div class="log-panel" id="log"></div>
+<div class="statusbar">
+  <div class="led" id="led"></div>
+  <span id="status-txt">WAITING FOR ORCHESTRATOR...</span>
+  <span class="apill" id="apill"></span>
+</div>
+<div class="terminal" id="terminal"></div>
 
+<script src="sprites.js"></script>
 <script>
-  // ── State tracking ────────────────────────────────────────────────────────
-  let lastTs   = 0;      // last state.json timestamp — skip stale reads
-  let activeAgent = "";  // which agent is currently highlighted
+  document.getElementById('spr-pm').src  = SPRITES.michael;
+  document.getElementById('spr-dev').src = SPRITES.jim;
+  document.getElementById('spr-qa').src  = SPRITES.dwight;
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
-  const agents  = ["pm", "dev", "qa"];
-  const bubbles = Object.fromEntries(agents.map(a => [a, document.getElementById("bubble-" + a)]));
-  const agentEls= Object.fromEntries(agents.map(a => [a, document.getElementById("agent-"  + a)]));
-  const screens = Object.fromEntries(agents.map(a => [a, document.getElementById("screen-" + a)]));
-  const logEl   = document.getElementById("log");
-  const statusDot  = document.getElementById("status-dot");
-  const statusText = document.getElementById("status-text");
-  const attemptBadge = document.getElementById("attempt-badge");
-  const flash   = document.getElementById("flash");
+  let lastTs = 0, prevAttempt = 1;
+  const AGENTS = ['pm','dev','qa'];
+  const screenColors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387' };
+  const bubColors    = { pm:'#0F6E56', dev:'#185FA5', qa:'#854F0B' };
 
-  // ── Log helper ────────────────────────────────────────────────────────────
-  function addLog(text, cls = "info") {
-    const line = document.createElement("div");
-    line.className = "log-line " + cls;
-    line.textContent = "> " + text;
-    logEl.appendChild(line);
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  // ── Activate / deactivate agent visuals ──────────────────────────────────
-  function activateAgent(agent) {
-    if (agent === activeAgent) return;
-    // Deactivate all first
-    agents.forEach(a => {
-      bubbles[a].classList.remove("visible");
-      screens[a].querySelectorAll(".screen-line").forEach(l => l.classList.remove("active"));
-    });
-    activeAgent = agent;
-    if (!agents.includes(agent)) return;
-
-    // Bounce the active agent
-    const el = agentEls[agent];
-    el.classList.remove("bounce");
-    void el.offsetWidth;   // force reflow to restart animation
-    el.classList.add("bounce");
-    el.addEventListener("animationend", () => el.classList.remove("bounce"), { once: true });
-
-    // Light up screen lines
-    screens[agent].querySelectorAll(".screen-line").forEach(l => l.classList.add("active"));
+  function log(text, cls) {
+    const colors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387', pass:'#a6e3a1', fail:'#f38ba8', info:'#45475a' };
+    const el = document.getElementById('terminal');
+    const d = document.createElement('div');
+    d.style.color = colors[cls] || '#45475a';
+    d.textContent = '> ' + text;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
   }
 
   function showBubble(agent, text) {
-    const b = bubbles[agent];
-    b.textContent = text;
-    b.classList.add("visible");
-    // Colour the bubble border to match the agent
-    const colors = { pm: "#1D9E75", dev: "#378ADD", qa: "#BA7517" };
-    b.style.borderColor = colors[agent] || "#ccc";
+    AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
+    const b = document.getElementById('bub-'+agent);
+    b.textContent = text.toUpperCase();
+    b.style.borderColor = bubColors[agent];
+    b.classList.add('show');
   }
 
-  function hideAllBubbles() {
-    agents.forEach(a => bubbles[a].classList.remove("visible"));
+  function bounce(agent) {
+    const el = document.getElementById('spr-'+agent);
+    el.classList.remove('bounce');
+    void el.offsetWidth;
+    el.classList.add('bounce');
+    el.addEventListener('animationend', () => el.classList.remove('bounce'), { once:true });
   }
 
-  // ── QA walks to Dev's desk when re-pinging ────────────────────────────────
-  function triggerWalk() {
-    const qaEl = agentEls["qa"];
-    // QA is rightmost, Dev is centre — roughly 160px apart
-    qaEl.style.setProperty("--walk-dist", "-160px");
-    qaEl.classList.add("walking");
-    qaEl.addEventListener("animationend", () => qaEl.classList.remove("walking"), { once: true });
+  function activateScreen(agent) {
+    AGENTS.forEach(a => [1,2,3].forEach(n => {
+      const e = document.getElementById(a+'-l'+n);
+      if (e) e.style.background = '#313244';
+    }));
+    [1,2,3].forEach((n,i) => {
+      const e = document.getElementById(agent+'-l'+n);
+      if (e) setTimeout(() => e.style.background = screenColors[agent], i*100);
+    });
   }
 
-  // ── Apply a state update from state.json ──────────────────────────────────
-  let prevVerdict = "";
-  let prevAgent   = "";
+  function flashPod(agent, type) {
+    const el = document.getElementById('pod-'+agent);
+    el.classList.remove('flash-pass','flash-fail');
+    void el.offsetWidth;
+    el.classList.add('flash-'+type);
+    el.addEventListener('animationend', () => el.classList.remove('flash-pass','flash-fail'), { once:true });
+  }
 
-  function applyState(state) {
-    const { agent, status, message, attempt, verdict, ts } = state;
-    if (ts === lastTs) return;   // no change
-    lastTs = ts;
+  function qaWalksToDev() {
+    const el = document.getElementById('spr-qa');
+    el.classList.remove('walking');
+    void el.offsetWidth;
+    el.classList.add('walking');
+    el.addEventListener('animationend', () => el.classList.remove('walking'), { once:true });
+  }
 
-    // Status bar
-    statusText.textContent = `[${agent.toUpperCase()}] ${status}`;
-    attemptBadge.textContent = attempt > 1 ? `attempt ${attempt}` : "";
+  function applyState(s) {
+    if (s.ts === lastTs) return;
+    lastTs = s.ts;
+    const { agent, status, message, attempt, verdict } = s;
 
-    // Dot colour
-    statusDot.className = "status-dot";
-    if (agent === "done") {
-      statusDot.classList.add(verdict === "pass" ? "pass" : "fail");
-    } else if (agent !== "idle") {
-      statusDot.classList.add("active");
-    }
+    document.getElementById('status-txt').textContent = '['+agent.toUpperCase()+'] '+status.toUpperCase();
+    document.getElementById('apill').textContent = attempt > 1 ? 'ATTEMPT '+attempt : '';
 
-    // Flash on verdict change
-    if (verdict && verdict !== prevVerdict) {
-      flash.className = "office-flash " + verdict;
-      setTimeout(() => flash.className = "office-flash", 1500);
-    }
-    prevVerdict = verdict;
+    const led = document.getElementById('led');
+    led.className = 'led';
+    if (agent === 'done') led.classList.add(verdict === 'pass' ? 'pass' : 'fail');
+    else if (AGENTS.includes(agent)) led.classList.add('on');
 
-    // Activate agent + bubble
-    if (agents.includes(agent)) {
-      activateAgent(agent);
+    AGENTS.forEach(a => document.getElementById('pod-'+a).classList.remove('active'));
+    if (AGENTS.includes(agent)) {
+      document.getElementById('pod-'+agent).classList.add('active');
       showBubble(agent, status);
-
-      // If QA is failing and agent just switched TO qa from dev — walk!
-      if (agent === "qa" && prevAgent === "dev" && attempt > 1) {
-        triggerWalk();
-      }
-      prevAgent = agent;
+      bounce(agent);
+      activateScreen(agent);
+      if (agent === 'qa' && verdict) flashPod('qa', verdict);
+      if (agent === 'qa' && attempt > prevAttempt) setTimeout(qaWalksToDev, 500);
+      prevAttempt = attempt;
     } else {
-      hideAllBubbles();
-      activeAgent = "";
+      AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
     }
 
-    // Log
-    const cls = agent === "done"
-      ? (verdict === "pass" ? "pass" : "fail")
-      : (agents.includes(agent) ? agent : "info");
-    addLog(message || status, cls);
+    const cls = agent === 'done' ? (verdict === 'pass' ? 'pass' : 'fail') : (AGENTS.includes(agent) ? agent : 'info');
+    log(message || status, cls);
   }
 
-  // ── Poll state.json ───────────────────────────────────────────────────────
   async function poll() {
     try {
-      // Cache-bust with timestamp so browser doesn't serve a stale file
-      const res = await fetch("../workspace/state.json?t=" + Date.now());
-      if (res.ok) {
-        const state = await res.json();
-        applyState(state);
-      }
-    } catch (e) {
-      // File not found or parse error — orchestrator hasn't started yet
-    }
-    setTimeout(poll, 1000);   // poll every second
+      const r = await fetch('../workspace/state.json?t='+Date.now());
+      if (r.ok) applyState(await r.json());
+    } catch(_) {}
+    setTimeout(poll, 1000);
   }
 
   poll();
-  addLog("UI ready — run python orchestrator.py to start", "info");
+  log('UI READY — RUN python orchestrator.py TO START', 'info');
 </script>
 </body>
 </html>
