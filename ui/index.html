@@ -34,6 +34,7 @@
       grid-template-columns: 1fr 1fr 1fr;
       grid-template-rows: auto auto;
       gap: 12px;
+      overflow: visible;
     }
 
     /* top wall strip */
@@ -48,7 +49,7 @@
 
     /* ── Individual desk pods ───────────────────────────────── */
     .pod {
-      background: #d8d0c4;
+      background: #e8eae7;
       border: 2px solid #a09080;
       border-radius: 2px;
       padding: 10px 8px 8px;
@@ -57,10 +58,11 @@
       align-items: center;
       position: relative;
       transition: background 0.3s, border-color 0.3s;
-      min-height: 260px;
+      min-height: 320px;
+      overflow: visible;
     }
     .pod.active {
-      background: #e8e4dc;
+      background: #e8eae7;
       border-color: #6a9060;
       box-shadow: inset 0 0 0 1px #6a9060;
     }
@@ -68,7 +70,6 @@
     .pod.flash-fail { animation: ffail 0.9s ease; }
     @keyframes fpass { 40% { background: #c4e0bc; border-color: #4a8040; } }
     @keyframes ffail { 40% { background: #e8c0c0; border-color: #a04040; } }
-
     /* partition wall feel — top border thicker */
     .pod::before {
       content: attr(data-label);
@@ -190,15 +191,18 @@
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      margin-top: 48px;   /* below the chair */
+      margin-top: 48px;
       flex: 1;
       position: relative;
+      overflow: visible;
+      min-height: 160px;
+      background: #e8eae7;
     }
 
     .sprite {
       image-rendering: pixelated;
       image-rendering: crisp-edges;
-      height: 110px;
+      height: 150px;
       width: auto;
       /* face toward desk = face upward in top-down = we show from behind */
       /* slight perspective tilt: scale Y down so they look top-down */
@@ -426,11 +430,10 @@
 </div>
 <div class="terminal" id="terminal"></div>
 
-<script src="sprites.js"></script>
 <script>
-  document.getElementById('spr-pm').src  = SPRITES.michael;
-  document.getElementById('spr-dev').src = SPRITES.jim;
-  document.getElementById('spr-qa').src  = SPRITES.dwight;
+  document.getElementById('spr-pm').src  = '../characters/michael.png';
+  document.getElementById('spr-dev').src = '../characters/jim.png';
+  document.getElementById('spr-qa').src  = '../characters/dwight.png';
 
   let lastTs = 0, prevAttempt = 1;
   const AGENTS = ['pm','dev','qa'];
