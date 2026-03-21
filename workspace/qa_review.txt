@@ -1,7 +1,7 @@
 QA REVIEW
 =========
-Bug 1 check: The `flatten` function now includes `depth > 0` in its conditional check for recursion and decrements `depth` in the recursive call `flatten(item, depth - 1)`. This correctly utilizes the `depth` parameter to control the level of flattening. — FIXED
-Bug 2 check: The `running_total` function's loop now correctly starts iterating from `transactions[1:]` instead of `transactions[2:]`, ensuring that the second element of the list is included in the total. — FIXED
-Bug 3 check: The `chunk_list` function's `range` statement has been updated to `range(0, len(lst), size)`, which correctly iterates through the entire list, ensuring all elements are included in chunks, including any final partial chunk. — FIXED
+Bug 1 check: The `flatten` function now correctly uses the `depth` parameter in its recursive condition (`depth > 0`) and decrements `depth` in the recursive call (`depth - 1`). This ensures that flattening only occurs up to the specified depth, as demonstrated by tracing the example `flatten([[1, [2, 3]], [4, [5]]], depth=1)` which correctly yields `[1, [2, 3], 4, [5]]`. — FIXED
+Bug 2 check: The `running_total` function now iterates through all `amount` elements directly using a `for...in` loop and adds each to the `total`. This standard summation pattern ensures no elements are skipped, correctly calculating `100` for `[10, 20, 30, 40]`. — FIXED
+Bug 3 check: The `chunk_list` function uses `range(0, len(lst), size)` to correctly determine the starting indices for chunks. Python's list slicing `lst[i:i + size]` handles cases where `i + size` exceeds `len(lst)` by correctly taking elements up to the list's end, thus ensuring all elements are included in chunks, even partial ones. For `[1,2,3,4,5,6]` with `size=2`, this correctly yields `[[1, 2], [3, 4], [5, 6]]`. — FIXED
 
 Verdict: PASS

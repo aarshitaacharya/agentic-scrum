@@ -1,18 +1,18 @@
 TICKET
 ======
-Summary: Several functions in the script have logic errors leading to incorrect output or ignored parameters.
+Summary: The script contains logic errors in list manipulation and summation functions, leading to incorrect outputs.
 
 Bugs found:
 1. Function: flatten
-   Problem: The `depth` parameter is provided but not utilized in the function's logic. The function always performs a full flatten, regardless of the specified `depth`.
-   Expected: The `depth` parameter should control how many levels of nesting are flattened. For `depth=1`, only the top-level lists should be flattened, leaving nested lists one level deep.
+   Problem: The `depth` parameter is ignored, causing the function to always fully flatten the nested list regardless of the specified depth.
+   Expected: The function should flatten the list only up to the specified `depth`. For `depth=1`, `[[1, [2, 3]], [4, [5]]]` should result in `[1, [2, 3], 4, [5]]`.
 
 2. Function: running_total
-   Problem: The calculation of the running total incorrectly skips the second element (`transactions[1]`) of the input list. The loop starts from `transactions[2:]`.
-   Expected: The running total should sum all elements in the `transactions` list, including `transactions[1]`.
+   Problem: The function incorrectly calculates the total by skipping the second element of the `transactions` list (index 1) in its summation loop.
+   Expected: The function should sum all elements in the `transactions` list. For `[10, 20, 30, 40]`, the total should be `100`, not `80`.
 
 3. Function: chunk_list
-   Problem: The loop condition `len(lst) - size` prevents the last chunk (or chunks, if `len(lst)` is not perfectly divisible by `size`) from being processed and added to the result.
-   Expected: The function should include all elements of the list, forming complete chunks and a final partial chunk if necessary. The loop should iterate up to `len(lst)`.
+   Problem: The loop range for creating chunks is incorrect, causing the last chunk(s) of the list to be missed. This is particularly noticeable when the list length is a multiple of the chunk size.
+   Expected: The function should include all elements of the original list, forming complete or partial chunks as appropriate. For `[1,2,3,4,5,6]` with `size=2`, the output should be `[[1, 2], [3, 4], [5, 6]]`.
 
 End of ticket.

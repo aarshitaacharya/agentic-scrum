@@ -1,26 +1,31 @@
 # Agentic Scrum
 
-A tiny multi-agent system where PM, Dev, and QA agents collaborate to fix bugs.
-Built with Gemini 2.5 Flash (free tier). No frameworks, just plain Python + one HTML file.
+A multi-agent system where PM, Dev, and QA agents collaborate to fix bugs.
+Built with Gemini 2.5 Flash (free tier). No frameworks — plain Python + one HTML file.
 
 ## Project structure
 
 ```
 agentic-scrum/
-├── orchestrator.py       # main script — run this
+├── server.py             # Flask server — the only thing you need to run
+├── orchestrator.py       # pipeline logic (called by server.py automatically)
 ├── requirements.txt
 ├── agents/
-│   ├── pm_prompt.py      # PM agent personality + prompt templates
-│   ├── dev_prompt.py     # Dev agent personality + prompt templates
-│   └── qa_prompt.py      # QA agent personality + prompt templates
+│   ├── pm_prompt.py
+│   ├── dev_prompt.py
+│   └── qa_prompt.py
+├── characters/
+│   ├── michael.png
+│   ├── jim.png
+│   └── dwight.png
 ├── workspace/
-│   ├── buggy_script.py   # the file being reviewed/fixed (swap this out)
+│   ├── buggy_script.py   # replaced when you drop a file in the UI
 │   ├── ticket.txt        # written by PM
 │   ├── patched_script.py # written by Dev
 │   ├── qa_review.txt     # written by QA
-│   └── state.json        # written by orchestrator, read by UI
+│   └── state.json        # live state for the UI
 └── ui/
-    └── index.html        # the desk animation UI
+    └── index.html
 ```
 
 ## Setup
@@ -36,17 +41,12 @@ agentic-scrum/
 
 ## Running
 
-You need two terminals open at the same time.
+Just one command now:
 
-Terminal 1 — serve the UI (must be run from the project root):
-   python -m http.server 8000
+   python server.py
 
-Terminal 2 — run the pipeline:
-   python orchestrator.py
+Then open http://localhost:8000 in your browser.
 
-Then open http://localhost:8000/ui/index.html in your browser.
-Start watching, then run the orchestrator — agents will animate as they work.
-
-## Swapping in your own script
-Replace workspace/buggy_script.py with any single-file Python script.
-The agents will figure out the rest.
+1. Drop any .py file onto the drop zone
+2. Hit RUN — watch the agents go
+3. Check the side panel for ticket, diff, and stats

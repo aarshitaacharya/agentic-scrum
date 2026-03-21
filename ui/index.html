@@ -29,7 +29,7 @@
       align-items: start;
     }
 
-    /* left column: office + statusbar + terminal */
+    /* left column: office + statusbar + dropzone */
     .left-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 
     /* ── Office floor ───────────────────────────────────────── */
@@ -196,14 +196,23 @@
     #status-txt { color: #cdd6f4; }
     .apill { margin-left: auto; font-size: 9px; padding: 1px 8px; border: 1px solid #313244; color: #585b70; }
 
-    /* ── Terminal ───────────────────────────────────────────── */
-    .terminal {
-      background: #11111b; border: 2px solid #313244; border-top: none;
-      padding: 10px 14px; height: 120px; overflow-y: auto;
-      font-size: 11px; line-height: 1.8;
+    /* ── File drop zone ─────────────────────────────────────── */
+    .dropzone {
+      background: #11111b; border: 2px dashed #313244; border-top: none;
+      padding: 16px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      min-height: 90px;
     }
-    .terminal::-webkit-scrollbar { width: 4px; }
-    .terminal::-webkit-scrollbar-thumb { background: #313244; }
+    .dropzone:hover, .dropzone.dragover { border-color: #0052CC; background: #11152a; }
+    .dropzone.has-file { border-color: #a6e3a1; background: #0d1a0d; border-style: solid; }
+    .drop-icon { width: 28px; height: 28px; border: 2px solid #313244; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #45475a; flex-shrink: 0; }
+    .dropzone.has-file .drop-icon { border-color: #a6e3a1; color: #a6e3a1; }
+    .drop-label { font-size: 10px; color: #45475a; letter-spacing: 1px; text-align: center; line-height: 1.6; }
+    .dropzone.has-file .drop-label { color: #a6e3a1; }
+    .drop-sub { font-size: 9px; color: #313244; }
+    .dropzone.has-file .drop-sub { color: #3B6D11; }
+    #file-input { display: none; }
 
     /* ── Right panel ────────────────────────────────────────── */
     .right-panel {
@@ -285,7 +294,7 @@
 
 <div class="main-layout">
 
-  <!-- ── LEFT: office + board + statusbar + terminal ── -->
+  <!-- ── LEFT: office + board + statusbar + dropzone ── -->
   <div class="left-col">
     <div class="office">
 
@@ -416,7 +425,23 @@
       <span id="status-txt">WAITING FOR ORCHESTRATOR...</span>
       <span class="apill" id="apill"></span>
     </div>
-    <div class="terminal" id="terminal"></div>
+    <input type="file" id="file-input" accept=".py"/>
+    <div style="display:flex;gap:0;">
+      <div class="dropzone" id="dropzone" style="flex:1;border-right:none;"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div class="drop-icon" id="drop-icon">+</div>
+        <div class="drop-label" id="drop-label">DROP .PY FILE HERE OR CLICK TO BROWSE</div>
+        <div class="drop-sub" id="drop-sub">no file selected</div>
+      </div>
+      <button id="run-btn" onclick="runPipeline()"
+        style="background:#0052CC;color:#fff;border:2px solid #0052CC;border-top:none;
+               padding:0 20px;font-family:monospace;font-size:10px;letter-spacing:2px;
+               cursor:pointer;white-space:nowrap;opacity:0.4;pointer-events:none;
+               text-transform:uppercase;transition:background 0.2s,opacity 0.2s;">
+        RUN &#9658;
+      </button>
+    </div>
   </div><!-- .left-col -->
 
   <!-- ── RIGHT PANEL ── -->
@@ -506,9 +531,9 @@
 </div><!-- .main-layout -->
 
 <script>
-  document.getElementById('spr-pm').src  = '../characters/michael.png';
-  document.getElementById('spr-dev').src = '../characters/jim.png';
-  document.getElementById('spr-qa').src  = '../characters/dwight.png';
+  document.getElementById('spr-pm').src  = '/characters/michael.png';
+  document.getElementById('spr-dev').src = '/characters/jim.png';
+  document.getElementById('spr-qa').src  = '/characters/dwight.png';
 
   // ── State ──────────────────────────────────────────────────
   let lastTs = 0, prevAttempt = 1;
@@ -526,12 +551,7 @@
 
   // ── Terminal log ────────────────────────────────────────────
   function log(text, cls) {
-    const colors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387', pass:'#a6e3a1', fail:'#f38ba8', info:'#45475a' };
-    const el = document.getElementById('terminal');
-    const d = document.createElement('div');
-    d.style.color = colors[cls] || '#45475a';
-    d.textContent = '> ' + text;
-    el.appendChild(d); el.scrollTop = el.scrollHeight;
+    // log silently — no terminal UI anymore
   }
 
   // ── Office helpers ──────────────────────────────────────────
@@ -743,18 +763,18 @@
     // Load files into side panel
     if (agent === 'dev' && !ticketLoaded) {
       ticketLoaded = true;
-      fetchFile('../workspace/ticket.txt').then(t => { if(t) updateTicketTab(t); });
+      fetchFile('/workspace/ticket.txt').then(t => { if(t) updateTicketTab(t); });
     }
     if ((agent === 'qa' || agent === 'done') && !diffLoaded) {
       diffLoaded = true;
       Promise.all([
-        fetchFile('../workspace/buggy_script.py'),
-        fetchFile('../workspace/patched_script.py')
+        fetchFile('/workspace/buggy_script.py'),
+        fetchFile('/workspace/patched_script.py')
       ]).then(([orig, patch]) => { if(orig && patch) updateDiffTab(orig, patch); });
     }
     if (agent === 'qa' || agent === 'done') {
       // Show QA verdict in ticket tab
-      fetchFile('../workspace/qa_review.txt').then(r => {
+      fetchFile('/workspace/qa_review.txt').then(r => {
         if (!r) return;
         document.getElementById('qa-section').style.display = 'block';
         const v = r.includes('Verdict: PASS') ? '✓ PASS' : '✗ FAIL';
@@ -774,14 +794,119 @@
   // ── Poll ────────────────────────────────────────────────────
   async function poll() {
     try {
-      const r = await fetch('../workspace/state.json?t='+Date.now());
+      const r = await fetch('/workspace/state.json?t='+Date.now());
       if (r.ok) applyState(await r.json());
-    } catch(_) {}
+    } catch(_) {
+      // Server not ready yet — retry silently
+    }
     setTimeout(poll, 1000);
   }
 
+  // ── Drop zone ────────────────────────────────────────────
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.add('dragover');
+  }
+  function onDragLeave() {
+    document.getElementById('dropzone').classList.remove('dragover');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+  document.getElementById('file-input').addEventListener('change', function() {
+    if (this.files[0]) handleFile(this.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.name.endsWith('.py')) {
+      document.getElementById('drop-label').textContent = 'PYTHON FILES ONLY (.py)';
+      return;
+    }
+    // POST the file to the server — it writes it to workspace/buggy_script.py
+    const formData = new FormData();
+    formData.append('file', file);
+
+    document.getElementById('drop-label').textContent = 'UPLOADING...';
+
+    fetch('/upload', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const dz = document.getElementById('dropzone');
+          dz.classList.add('has-file');
+          document.getElementById('drop-icon').textContent = '\u2713';
+          document.getElementById('drop-label').textContent = file.name.toUpperCase();
+          document.getElementById('drop-sub').textContent = data.lines + ' lines — ready to run';
+          // Enable the Run button
+          const btn = document.getElementById('run-btn');
+          btn.style.opacity = '1';
+          btn.style.pointerEvents = 'auto';
+        } else {
+          document.getElementById('drop-label').textContent = 'ERROR: ' + data.error;
+        }
+      })
+      .catch(() => {
+        document.getElementById('drop-label').textContent = 'UPLOAD FAILED — IS SERVER.PY RUNNING?';
+      });
+  }
+
+  function runPipeline() {
+    const btn = document.getElementById('run-btn');
+    btn.textContent = 'RUNNING...';
+    btn.style.background = '#003d99';
+    btn.style.pointerEvents = 'none';
+
+    // Reset panel state for new run
+    ticketLoaded = false;
+    diffLoaded   = false;
+    agentStartTimes = {};
+    agentDurations  = {};
+    document.getElementById('ticket-empty').style.display = 'block';
+    document.getElementById('ticket-content').style.display = 'none';
+    document.getElementById('diff-lines').innerHTML = '';
+    document.getElementById('diff-badge').textContent = 'WAITING FOR DEV...';
+    document.getElementById('diff-badge').style.color = '#45475a';
+    document.getElementById('diff-stats').style.display = 'none';
+    document.getElementById('qa-section').style.display = 'none';
+    switchTab('ticket');
+
+    fetch('/run', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          btn.textContent = 'RUN \u25b8';
+          btn.style.background = '#0052CC';
+          btn.style.pointerEvents = 'auto';
+          alert(data.error);
+        }
+        // Poll /status to re-enable button when done
+        pollRunStatus();
+      })
+      .catch(() => {
+        btn.textContent = 'RUN \u25b8';
+        btn.style.pointerEvents = 'auto';
+      });
+  }
+
+  function pollRunStatus() {
+    fetch('/status')
+      .then(r => r.json())
+      .then(data => {
+        if (data.running) {
+          setTimeout(pollRunStatus, 2000);
+        } else {
+          const btn = document.getElementById('run-btn');
+          btn.textContent = 'RUN AGAIN \u25b8';
+          btn.style.background = '#0052CC';
+          btn.style.pointerEvents = 'auto';
+        }
+      });
+  }
+
   poll();
-  log('UI READY — RUN python orchestrator.py TO START', 'info');
 </script>
 </body>
 </html>

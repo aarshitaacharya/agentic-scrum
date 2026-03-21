@@ -1,1 +1,2 @@
-google-generativeai>=0.8.0
+-e google-generativeai>=0.8.0
+flask>=3.0.0
