@@ -261,48 +261,142 @@
       padding: 2px 8px; border-radius: 1px;
     }
 
-    /* ── Meeting room (bottom span) ─────────────────────────── */
-    .meeting-room {
+    /* ── Jira board (replaces conference room) ──────────────── */
+    .jira-board {
       grid-column: 1 / -1;
-      background: #ccc8bc;
+      background: #F4F5F7;
       border: 2px solid #a09080;
-      border-radius: 2px;
-      padding: 10px 16px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    /* Jira-style top bar */
+    .jira-topbar {
+      background: #0052CC;
+      padding: 7px 12px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      position: relative;
-      min-height: 70px;
+      gap: 8px;
     }
-    .meeting-room::before {
-      content: 'CONFERENCE ROOM';
-      position: absolute;
-      top: 4px; left: 8px;
-      font-size: 7px; letter-spacing: 2px; color: #8a8070;
+    .jira-logo {
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 900; color: #0052CC;
+      flex-shrink: 0;
     }
-    /* conference table from top */
-    .conf-table {
-      width: 180px; height: 38px;
-      background: #c8a878;
-      border: 2px solid #a08858;
+    .jira-project-name {
+      font-size: 11px; font-weight: 600;
+      color: #fff; letter-spacing: 0.5px;
+    }
+    .jira-sprint-badge {
+      margin-left: auto;
+      font-size: 9px; color: #B3D4FF;
+      letter-spacing: 1px;
+    }
+
+    /* columns container */
+    .jira-columns {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      padding: 10px 8px;
+      min-height: 130px;
+    }
+
+    /* single column */
+    .jcol {
+      padding: 0 4px;
+      border-right: 1px solid #DFE1E6;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .jcol:last-child { border-right: none; }
+
+    .jcol-header {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #5E6C84;
+      padding: 4px 2px 6px;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .jcol-header .count {
+      background: #DFE1E6;
+      color: #5E6C84;
+      font-size: 8px;
+      border-radius: 10px;
+      padding: 0 5px;
+      font-weight: 600;
+    }
+    /* active column header gets colored underline */
+    .jcol.col-active .jcol-header { border-bottom-color: #0052CC; color: #0052CC; }
+    .jcol.col-active .jcol-header .count { background: #0052CC; color: #fff; }
+
+    /* ticket card */
+    .jticket {
+      background: #fff;
+      border: 1px solid #DFE1E6;
       border-radius: 3px;
+      padding: 7px 8px;
+      font-size: 10px;
+      color: #172B4D;
+      display: none;         /* hidden until ticket appears */
+      flex-direction: column;
+      gap: 4px;
+      transition: box-shadow 0.2s;
+      cursor: default;
       position: relative;
     }
-    .conf-table::after {
-      content: '';
-      position: absolute;
-      bottom: -4px; left: 4px; right: 4px;
-      height: 4px; background: #906838;
-      border-radius: 0 0 2px 2px;
+    .jticket.visible { display: flex; }
+    .jticket.active-card {
+      box-shadow: 0 0 0 2px #0052CC;
     }
-    /* chairs around table */
-    .conf-chair {
-      width: 18px; height: 18px;
+    .jticket-id {
+      font-size: 9px; color: #5E6C84;
+      font-family: monospace; letter-spacing: 0.5px;
+    }
+    .jticket-title {
+      font-weight: 600; font-size: 10px;
+      color: #172B4D; line-height: 1.3;
+    }
+    .jticket-footer {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+    }
+    .jticket-type {
+      font-size: 8px; padding: 1px 5px;
+      border-radius: 2px; font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .type-bug { background: #FFEBE6; color: #BF2600; }
+    .type-task { background: #E3FCEF; color: #006644; }
+    .jticket-avatar {
+      width: 16px; height: 16px;
       border-radius: 50%;
-      background: #c05050;
-      border: 2px solid #903030;
+      font-size: 7px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
     }
+    /* priority dot */
+    .jticket-priority {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    /* slide animation when card moves columns */
+    @keyframes card-arrive {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .jticket.arriving { animation: card-arrive 0.35s ease; }
 
     /* ── Status + terminal ──────────────────────────────────── */
     .statusbar {
@@ -407,17 +501,110 @@
     <div class="pod-name" style="background:#854F0B;">QA</div>
   </div>
 
-  <!-- Conference room bottom -->
-  <div class="meeting-room">
-    <div class="conf-chair"></div>
-    <div class="conf-chair"></div>
-    <div class="conf-table"></div>
-    <div class="conf-chair"></div>
-    <div class="conf-chair"></div>
-    <div style="position:absolute;right:16px;bottom:8px;display:flex;gap:6px;">
-      <!-- plant top-down -->
-      <div style="width:16px;height:16px;border-radius:50%;background:#27ae60;border:2px solid #1e8449;"></div>
-      <div style="width:16px;height:16px;border-radius:50%;background:#2ecc71;border:2px solid #27ae60;"></div>
+  <!-- Jira board replaces conference room -->
+  <div class="jira-board">
+    <div class="jira-topbar">
+      <div class="jira-logo">J</div>
+      <span class="jira-project-name">DMTECH / Bug Fix Board</span>
+      <span class="jira-sprint-badge">SPRINT 1 &bull; ACTIVE</span>
+    </div>
+    <div class="jira-columns">
+
+      <!-- Analysis -->
+      <div class="jcol" id="jcol-analysis">
+        <div class="jcol-header">
+          Analysis
+          <span class="count" id="cnt-analysis">0</span>
+        </div>
+        <div class="jticket" id="ticket-analysis">
+          <div class="jticket-id">DMTECH-42</div>
+          <div class="jticket-title" id="ticket-title">Bug detected</div>
+          <div class="jticket-footer">
+            <span class="jticket-type type-bug">BUG</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="jticket-priority" style="background:#FF5630;" title="High"></div>
+              <div class="jticket-avatar" style="background:#0F6E56;" title="Michael">M</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- In Development -->
+      <div class="jcol" id="jcol-dev">
+        <div class="jcol-header">
+          In Development
+          <span class="count" id="cnt-dev">0</span>
+        </div>
+        <div class="jticket" id="ticket-dev">
+          <div class="jticket-id">DMTECH-42</div>
+          <div class="jticket-title">Writing fix</div>
+          <div class="jticket-footer">
+            <span class="jticket-type type-bug">BUG</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="jticket-priority" style="background:#FF5630;"></div>
+              <div class="jticket-avatar" style="background:#185FA5;" title="Jim">J</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA Review -->
+      <div class="jcol" id="jcol-qa">
+        <div class="jcol-header">
+          QA Review
+          <span class="count" id="cnt-qa">0</span>
+        </div>
+        <div class="jticket" id="ticket-qa">
+          <div class="jticket-id">DMTECH-42</div>
+          <div class="jticket-title">Reviewing patch</div>
+          <div class="jticket-footer">
+            <span class="jticket-type type-bug">BUG</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="jticket-priority" style="background:#FF5630;"></div>
+              <div class="jticket-avatar" style="background:#854F0B;" title="Dwight">D</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failed / Back to Dev -->
+      <div class="jcol" id="jcol-failed">
+        <div class="jcol-header">
+          Failed QA
+          <span class="count" id="cnt-failed">0</span>
+        </div>
+        <div class="jticket" id="ticket-failed">
+          <div class="jticket-id">DMTECH-42</div>
+          <div class="jticket-title">Needs rework</div>
+          <div class="jticket-footer">
+            <span class="jticket-type type-bug">BUG</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="jticket-priority" style="background:#FF5630;"></div>
+              <div class="jticket-avatar" style="background:#854F0B;">D</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Done / Prod -->
+      <div class="jcol" id="jcol-done">
+        <div class="jcol-header">
+          Done
+          <span class="count" id="cnt-done">0</span>
+        </div>
+        <div class="jticket" id="ticket-done">
+          <div class="jticket-id">DMTECH-42</div>
+          <div class="jticket-title">Deployed to prod</div>
+          <div class="jticket-footer">
+            <span class="jticket-type type-task">DONE</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div class="jticket-priority" style="background:#36B37E;"></div>
+              <div class="jticket-avatar" style="background:#36B37E;">✓</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -493,6 +680,38 @@
     el.addEventListener('animationend', () => el.classList.remove('walking'), { once:true });
   }
 
+  // ── Jira board ─────────────────────────────────────────────
+  // Maps agent state -> which Jira column is active
+  const COLS = ['analysis','dev','qa','failed','done'];
+
+  function moveTicket(colId, titleOverride) {
+    // Hide all tickets and deactivate all columns
+    COLS.forEach(c => {
+      document.getElementById('ticket-'+c).classList.remove('visible','active-card','arriving');
+      document.getElementById('jcol-'+c).classList.remove('col-active');
+      document.getElementById('cnt-'+c).textContent = '0';
+    });
+    // Show ticket in target column
+    const ticket = document.getElementById('ticket-'+colId);
+    const col    = document.getElementById('jcol-'+colId);
+    if (titleOverride) {
+      const t = ticket.querySelector('.jticket-title');
+      if (t) t.textContent = titleOverride;
+    }
+    ticket.classList.add('visible','active-card','arriving');
+    col.classList.add('col-active');
+    document.getElementById('cnt-'+colId).textContent = '1';
+  }
+
+  function boardFromState(agent, status, verdict) {
+    if (agent === 'pm')   return moveTicket('analysis', status);
+    if (agent === 'dev')  return moveTicket('dev', status);
+    if (agent === 'qa' && verdict === 'fail') return moveTicket('failed', 'Needs rework');
+    if (agent === 'qa')   return moveTicket('qa', status);
+    if (agent === 'done' && verdict === 'pass')  return moveTicket('done', 'Deployed to prod ✓');
+    if (agent === 'done' && verdict === 'fail')  return moveTicket('failed', 'Gave up');
+  }
+
   function applyState(s) {
     if (s.ts === lastTs) return;
     lastTs = s.ts;
@@ -521,6 +740,9 @@
 
     const cls = agent === 'done' ? (verdict === 'pass' ? 'pass' : 'fail') : (AGENTS.includes(agent) ? agent : 'info');
     log(message || status, cls);
+
+    // Update Jira board
+    boardFromState(agent, status, verdict);
   }
 
   async function poll() {

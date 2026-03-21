@@ -1,18 +1,18 @@
 TICKET
 ======
-Summary: The script contains multiple logic errors in list manipulation functions, causing incorrect flattening depth, skipped elements in running totals, and incomplete list chunking.
+Summary: The script contains logic errors in list manipulation functions, causing incorrect flattening depth, incomplete running totals, and missing list chunks.
 
 Bugs found:
 1. Function: flatten
-   Problem: The `depth` parameter is ignored, and the function always performs a full, deep flatten, regardless of the specified depth.
-   Expected: The function should flatten the `nested_list` only up to the level specified by the `depth` parameter. For `depth=1`, `[[1, [2, 3]], [4, [5]]]` should become `[1, [2, 3], 4, [5]]`.
+   Problem: The `depth` parameter is ignored, causing the function to always completely flatten the list, regardless of the specified depth.
+   Expected: The function should flatten the `nested_list` only up to the specified `depth`. For `depth=1`, it should only flatten the first level of nesting.
 
 2. Function: running_total
-   Problem: The function skips the second element (`transactions[1]`) when calculating the total, leading to an incorrect sum.
-   Expected: The function should include all elements in the `transactions` list in its running total. For `[10, 20, 30, 40]`, the total should be `100`.
+   Problem: The loop iterates from `transactions[2:]`, skipping the second element (`transactions[1]`) from the total calculation.
+   Expected: The function should include all elements from `transactions[1]` onwards in the running total.
 
 3. Function: chunk_list
-   Problem: The loop condition `len(lst) - size` prevents the function from processing the last chunk(s) of the list. This results in either the final full chunk being omitted or any remaining partial chunk at the end of the list being dropped.
-   Expected: The function should create chunks covering the entire list. If the list length is not perfectly divisible by `size`, the last chunk should contain the remaining elements. For `[1,2,3,4,5,6]` with `size=2`, the output should be `[[1,2], [3,4], [5,6]]`. For `[1,2,3,4,5]` with `size=2`, it should be `[[1,2], [3,4], [5]]`.
+   Problem: The loop condition `len(lst) - size` causes the function to prematurely stop iterating, resulting in the last chunk(s) of the list being omitted from the `chunks` list.
+   Expected: The function should include all elements of the original list, creating chunks of the specified `size`, with any remaining elements forming a final, potentially smaller, chunk.
 
 End of ticket.
