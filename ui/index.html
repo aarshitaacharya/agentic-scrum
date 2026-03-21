@@ -5,6 +5,7 @@
   <title>Agentic Scrum Office</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       background: #1e1e2e;
       font-family: 'Courier New', monospace;
@@ -14,17 +15,28 @@
       padding: 20px 16px 32px;
       min-height: 100vh;
     }
+
     h1 { color: #cdd6f4; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3px; }
     .subtitle { color: #45475a; font-size: 10px; letter-spacing: 2px; margin-bottom: 16px; }
 
-    /* ── Top-down office floor ──────────────────────────────── */
-    .office {
+    /* ── Main two-column layout ─────────────────────────────── */
+    .main-layout {
       width: 100%;
-      max-width: 760px;
-      background: #e8e2d8;  /* floor tiles */
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    /* left column: office + statusbar + terminal */
+    .left-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+
+    /* ── Office floor ───────────────────────────────────────── */
+    .office {
+      background: #e8e2d8;
       border: 3px solid #45475a;
       position: relative;
-      /* tile grid on floor */
       background-image:
         linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
@@ -32,197 +44,89 @@
       padding: 16px;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto;
       gap: 12px;
       overflow: visible;
     }
-
-    /* top wall strip */
     .office::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 8px;
+      top: 0; left: 0; right: 0; height: 8px;
       background: repeating-linear-gradient(90deg, #8a8070 0px, #8a8070 20px, #a09080 20px, #a09080 40px);
       border-bottom: 2px solid #6a6050;
     }
 
-    /* ── Individual desk pods ───────────────────────────────── */
+    /* ── Desk pods ──────────────────────────────────────────── */
     .pod {
       background: #e8eae7;
       border: 2px solid #a09080;
       border-radius: 2px;
       padding: 10px 8px 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: flex; flex-direction: column; align-items: center;
       position: relative;
-      transition: background 0.3s, border-color 0.3s;
-      min-height: 320px;
+      transition: border-color 0.3s;
+      min-height: 300px;
       overflow: visible;
     }
-    .pod.active {
-      background: #e8eae7;
-      border-color: #6a9060;
-      box-shadow: inset 0 0 0 1px #6a9060;
-    }
+    .pod.active { border-color: #6a9060; box-shadow: inset 0 0 0 1px #6a9060; }
     .pod.flash-pass { animation: fpass 0.9s ease; }
     .pod.flash-fail { animation: ffail 0.9s ease; }
     @keyframes fpass { 40% { background: #c4e0bc; border-color: #4a8040; } }
     @keyframes ffail { 40% { background: #e8c0c0; border-color: #a04040; } }
-    /* partition wall feel — top border thicker */
     .pod::before {
       content: attr(data-label);
-      position: absolute;
-      top: -2px; left: -2px; right: -2px;
-      height: 18px;
-      background: #8a8070;
-      border-radius: 2px 2px 0 0;
+      position: absolute; top: -2px; left: -2px; right: -2px; height: 18px;
+      background: #8a8070; border-radius: 2px 2px 0 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 8px; letter-spacing: 2px; color: #e8e4dc;
-      text-transform: uppercase;
-      padding-top: 2px;
+      font-size: 8px; letter-spacing: 2px; color: #e8e4dc; text-transform: uppercase;
     }
 
-    /* ── Desk (top-down) ────────────────────────────────────── */
+    /* ── Desk surface ───────────────────────────────────────── */
     .desk-top {
-      width: 100%;
-      background: #c8a878;
-      border: 2px solid #a08858;
-      border-radius: 2px;
-      margin-top: 18px;   /* space for partition label */
-      padding: 6px;
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      position: relative;
+      width: 100%; background: #c8a878; border: 2px solid #a08858;
+      border-radius: 2px; margin-top: 18px; padding: 6px;
+      display: flex; align-items: flex-start; gap: 6px; position: relative;
     }
-    /* desk edge highlight = depth */
     .desk-top::after {
-      content: '';
-      position: absolute;
-      bottom: -5px; left: 2px; right: 2px;
-      height: 5px;
-      background: #906838;
-      border-radius: 0 0 2px 2px;
+      content: ''; position: absolute; bottom: -5px; left: 2px; right: 2px;
+      height: 5px; background: #906838; border-radius: 0 0 2px 2px;
     }
-
-    /* monitor from top */
     .monitor {
-      width: 56px; height: 38px;
-      background: #1e1e2e;
-      border: 2px solid #45475a;
-      border-radius: 1px;
-      flex-shrink: 0;
-      display: flex; flex-direction: column;
-      justify-content: center;
-      padding: 4px 5px;
-      gap: 3px;
+      width: 56px; height: 38px; background: #1e1e2e;
+      border: 2px solid #45475a; border-radius: 1px; flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center; padding: 4px 5px; gap: 3px;
     }
-    .sline {
-      height: 3px; border-radius: 1px;
-      background: #313244;
-      transition: background 0.3s;
-    }
-
-    /* keyboard from top */
+    .sline { height: 3px; border-radius: 1px; background: #313244; transition: background 0.3s; }
     .keyboard {
-      width: 36px; height: 14px;
-      background: #d4d0c8;
-      border: 1px solid #a8a498;
-      border-radius: 1px;
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 1px;
-      padding: 2px;
-      align-self: flex-end;
+      width: 36px; height: 14px; background: #d4d0c8; border: 1px solid #a8a498;
+      border-radius: 1px; display: grid; grid-template-columns: repeat(6,1fr);
+      grid-template-rows: repeat(3,1fr); gap: 1px; padding: 2px; align-self: flex-end;
     }
     .key { background: #b8b4ac; border-radius: 1px; }
-
-    /* mug from top */
-    .mug-top {
-      width: 11px; height: 11px;
-      border-radius: 50%;
-      border: 2px solid rgba(0,0,0,0.2);
-      align-self: flex-start;
-    }
-
-    /* papers from top */
-    .paper-stack {
-      width: 22px; height: 16px;
-      background: #f5f0e8;
-      border: 1px solid #c8c0b0;
-      position: relative;
-      align-self: flex-start;
-    }
-    .paper-stack::before {
-      content: '';
-      position: absolute;
-      top: 3px; left: 2px; right: 2px;
-      height: 2px; background: #c8c0b0;
-      box-shadow: 0 4px 0 #c8c0b0;
-    }
-
-    /* office chair from top */
+    .mug-top { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); align-self: flex-start; }
+    .paper-stack { width: 22px; height: 16px; background: #f5f0e8; border: 1px solid #c8c0b0; position: relative; align-self: flex-start; }
+    .paper-stack::before { content: ''; position: absolute; top: 3px; left: 2px; right: 2px; height: 2px; background: #c8c0b0; box-shadow: 0 4px 0 #c8c0b0; }
     .chair {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: #c05050;
-      border: 2px solid #903030;
-      position: absolute;
-      bottom: -42px;
-      left: 50%;
-      transform: translateX(-50%);
+      width: 28px; height: 28px; border-radius: 50%; background: #c05050;
+      border: 2px solid #903030; position: absolute; bottom: -42px; left: 50%; transform: translateX(-50%);
     }
-    .chair::after {
-      content: '';
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: #d06060;
-    }
+    .chair::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 16px; height: 16px; border-radius: 50%; background: #d06060; }
 
-    /* ── Character sprite area ──────────────────────────────── */
+    /* ── Character area ─────────────────────────────────────── */
     .char-area {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      margin-top: 48px;
-      flex: 1;
-      position: relative;
-      overflow: visible;
-      min-height: 160px;
-      background: #e8eae7;
+      width: 100%; display: flex; justify-content: center; align-items: flex-end;
+      margin-top: 48px; flex: 1; position: relative; overflow: visible;
+      min-height: 160px; background: #e8eae7;
     }
-
     .sprite {
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      height: 150px;
-      width: auto;
-      /* face toward desk = face upward in top-down = we show from behind */
-      /* slight perspective tilt: scale Y down so they look top-down */
-      transform: scaleX(-1);
-      display: block;
-      position: relative;
-      z-index: 2;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      height: 150px; width: auto; transform: scaleX(-1); display: block; position: relative; z-index: 2;
     }
-    .sprite.bounce {
-      animation: spr-bounce 0.12s steps(1) 7;
-    }
+    .sprite.bounce { animation: spr-bounce 0.12s steps(1) 7; }
     @keyframes spr-bounce {
       0%,100% { transform: scaleX(-1) translateY(0); }
       50%      { transform: scaleX(-1) translateY(-10px); }
     }
-    /* QA walks across to Dev */
-    .sprite.walking {
-      animation: spr-walk 2s ease forwards;
-      z-index: 10;
-    }
+    .sprite.walking { animation: spr-walk 2s ease forwards; z-index: 10; }
     @keyframes spr-walk {
       0%   { transform: scaleX(-1) translateX(0); }
       35%  { transform: scaleX(1) translateX(-90px); }
@@ -232,179 +136,56 @@
       100% { transform: scaleX(-1) translateX(0); }
     }
 
-    /* ── Bubble above character ─────────────────────────────── */
+    /* ── Chat bubble ────────────────────────────────────────── */
     .bubble {
-      position: absolute;
-      top: 0; left: 50%;
+      position: absolute; top: 0; left: 50%;
       transform: translateX(-50%) scale(0.8);
-      background: #fff;
-      border: 2px solid #45475a;
-      padding: 4px 8px 10px;
-      font-size: 9px;
-      letter-spacing: 0.5px;
-      color: #1e1e2e;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.2s, transform 0.2s;
+      background: #fff; border: 2px solid #45475a;
+      padding: 4px 8px 10px; font-size: 9px; letter-spacing: 0.5px; color: #1e1e2e;
+      white-space: nowrap; opacity: 0; transition: opacity 0.2s, transform 0.2s;
       z-index: 20;
       clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 60% 70%, 55% 100%, 50% 70%, 0% 70%);
     }
-    .bubble.show {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
-    }
+    .bubble.show { opacity: 1; transform: translateX(-50%) scale(1); }
+    .pod-name { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin-top: 6px; padding: 2px 8px; border-radius: 1px; }
 
-    /* ── Name label ─────────────────────────────────────────── */
-    .pod-name {
-      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-      color: #fff; margin-top: 6px;
-      padding: 2px 8px; border-radius: 1px;
-    }
-
-    /* ── Jira board (replaces conference room) ──────────────── */
+    /* ── Jira board ─────────────────────────────────────────── */
     .jira-board {
       grid-column: 1 / -1;
-      background: #F4F5F7;
-      border: 2px solid #a09080;
-      border-radius: 3px;
-      overflow: hidden;
+      background: #F4F5F7; border: 2px solid #a09080; border-radius: 3px; overflow: hidden;
     }
-
-    /* Jira-style top bar */
     .jira-topbar {
-      background: #0052CC;
-      padding: 7px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      background: #0052CC; padding: 7px 12px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .jira-logo {
-      width: 14px; height: 14px;
-      background: #fff;
-      border-radius: 2px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 900; color: #0052CC;
-      flex-shrink: 0;
-    }
-    .jira-project-name {
-      font-size: 11px; font-weight: 600;
-      color: #fff; letter-spacing: 0.5px;
-    }
-    .jira-sprint-badge {
-      margin-left: auto;
-      font-size: 9px; color: #B3D4FF;
-      letter-spacing: 1px;
-    }
-
-    /* columns container */
-    .jira-columns {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0;
-      padding: 10px 8px;
-      min-height: 130px;
-    }
-
-    /* single column */
-    .jcol {
-      padding: 0 4px;
-      border-right: 1px solid #DFE1E6;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .jira-logo { width: 14px; height: 14px; background: #fff; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #0052CC; flex-shrink: 0; }
+    .jira-project-name { font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+    .jira-sprint-badge { margin-left: auto; font-size: 9px; color: #B3D4FF; letter-spacing: 1px; }
+    .jira-columns { display: grid; grid-template-columns: repeat(5,1fr); gap: 0; padding: 10px 8px; min-height: 110px; }
+    .jcol { padding: 0 4px; border-right: 1px solid #DFE1E6; display: flex; flex-direction: column; gap: 6px; }
     .jcol:last-child { border-right: none; }
-
-    .jcol-header {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: #5E6C84;
-      padding: 4px 2px 6px;
-      border-bottom: 2px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .jcol-header .count {
-      background: #DFE1E6;
-      color: #5E6C84;
-      font-size: 8px;
-      border-radius: 10px;
-      padding: 0 5px;
-      font-weight: 600;
-    }
-    /* active column header gets colored underline */
+    .jcol-header { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5E6C84; padding: 4px 2px 6px; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 5px; }
+    .jcol-header .count { background: #DFE1E6; color: #5E6C84; font-size: 8px; border-radius: 10px; padding: 0 5px; font-weight: 600; }
     .jcol.col-active .jcol-header { border-bottom-color: #0052CC; color: #0052CC; }
     .jcol.col-active .jcol-header .count { background: #0052CC; color: #fff; }
-
-    /* ticket card */
-    .jticket {
-      background: #fff;
-      border: 1px solid #DFE1E6;
-      border-radius: 3px;
-      padding: 7px 8px;
-      font-size: 10px;
-      color: #172B4D;
-      display: none;         /* hidden until ticket appears */
-      flex-direction: column;
-      gap: 4px;
-      transition: box-shadow 0.2s;
-      cursor: default;
-      position: relative;
-    }
+    .jticket { background: #fff; border: 1px solid #DFE1E6; border-radius: 3px; padding: 7px 8px; font-size: 10px; color: #172B4D; display: none; flex-direction: column; gap: 4px; }
     .jticket.visible { display: flex; }
-    .jticket.active-card {
-      box-shadow: 0 0 0 2px #0052CC;
-    }
-    .jticket-id {
-      font-size: 9px; color: #5E6C84;
-      font-family: monospace; letter-spacing: 0.5px;
-    }
-    .jticket-title {
-      font-weight: 600; font-size: 10px;
-      color: #172B4D; line-height: 1.3;
-    }
-    .jticket-footer {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      margin-top: 2px;
-    }
-    .jticket-type {
-      font-size: 8px; padding: 1px 5px;
-      border-radius: 2px; font-weight: 600;
-      letter-spacing: 0.5px;
-    }
+    .jticket.active-card { box-shadow: 0 0 0 2px #0052CC; }
+    .jticket-id { font-size: 9px; color: #5E6C84; font-family: monospace; }
+    .jticket-title { font-weight: 600; font-size: 10px; color: #172B4D; line-height: 1.3; }
+    .jticket-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+    .jticket-type { font-size: 8px; padding: 1px 5px; border-radius: 2px; font-weight: 600; }
     .type-bug { background: #FFEBE6; color: #BF2600; }
     .type-task { background: #E3FCEF; color: #006644; }
-    .jticket-avatar {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      font-size: 7px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff;
-    }
-    /* priority dot */
-    .jticket-priority {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-
-    /* slide animation when card moves columns */
-    @keyframes card-arrive {
-      from { opacity: 0; transform: translateX(-10px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
+    .jticket-avatar { width: 16px; height: 16px; border-radius: 50%; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #fff; }
+    .jticket-priority { width: 6px; height: 6px; border-radius: 50%; }
+    @keyframes card-arrive { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
     .jticket.arriving { animation: card-arrive 0.35s ease; }
 
-    /* ── Status + terminal ──────────────────────────────────── */
+    /* ── Status bar ─────────────────────────────────────────── */
     .statusbar {
-      width: 100%; max-width: 760px;
-      background: #181825;
-      border: 2px solid #313244; border-top: none;
-      padding: 7px 14px;
-      display: flex; align-items: center; gap: 10px;
+      background: #181825; border: 2px solid #313244; border-top: none;
+      padding: 7px 14px; display: flex; align-items: center; gap: 10px;
       font-size: 10px; color: #585b70; letter-spacing: 1px;
     }
     .led { width: 8px; height: 8px; background: #313244; border: 1px solid #45475a; flex-shrink: 0; }
@@ -415,303 +196,520 @@
     #status-txt { color: #cdd6f4; }
     .apill { margin-left: auto; font-size: 9px; padding: 1px 8px; border: 1px solid #313244; color: #585b70; }
 
+    /* ── Terminal ───────────────────────────────────────────── */
     .terminal {
-      width: 100%; max-width: 760px;
-      background: #11111b;
-      border: 2px solid #313244; border-top: none;
+      background: #11111b; border: 2px solid #313244; border-top: none;
       padding: 10px 14px; height: 120px; overflow-y: auto;
       font-size: 11px; line-height: 1.8;
     }
     .terminal::-webkit-scrollbar { width: 4px; }
     .terminal::-webkit-scrollbar-thumb { background: #313244; }
+
+    /* ── Right panel ────────────────────────────────────────── */
+    .right-panel {
+      background: #181825;
+      border: 2px solid #313244;
+      border-radius: 3px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      /* match total left col height roughly */
+      align-self: stretch;
+    }
+
+    /* tab bar */
+    .panel-tabs {
+      display: flex; background: #11111b;
+      border-bottom: 1px solid #313244; flex-shrink: 0;
+    }
+    .ptab {
+      flex: 1; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 8px 4px; color: #45475a; cursor: pointer; text-align: center;
+      border-bottom: 2px solid transparent; transition: color 0.15s;
+      user-select: none;
+    }
+    .ptab:hover { color: #585b70; }
+    .ptab.active { color: #cdd6f4; border-bottom-color: #0052CC; }
+
+    /* tab panels */
+    .panel-body { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: #313244; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Ticket tab ─────────────────────────────────────────── */
+    .ticket-section { margin-bottom: 14px; }
+    .ts-label { font-size: 9px; color: #45475a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+    .ts-val { font-size: 11px; color: #cdd6f4; line-height: 1.6; }
+    .ts-tag { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 3px; margin: 2px 2px 0 0; }
+    .ts-divider { height: 1px; background: #313244; margin: 10px 0; }
+    .ticket-id-badge { font-size: 10px; color: #89b4fa; font-family: monospace; margin-bottom: 8px; }
+    .ticket-empty { font-size: 10px; color: #313244; text-align: center; margin-top: 40px; letter-spacing: 1px; }
+
+    /* ── Diff tab ───────────────────────────────────────────── */
+    .diff-header { font-size: 9px; color: #45475a; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .diff-line { display: flex; gap: 6px; font-size: 10px; font-family: monospace; line-height: 1.7; }
+    .dl-bar { width: 3px; border-radius: 1px; flex-shrink: 0; margin-top: 3px; height: 14px; }
+    .dl-bar.add { background: #a6e3a1; }
+    .dl-bar.rem { background: #f38ba8; }
+    .dl-bar.neu { background: transparent; }
+    .dl-num { color: #45475a; min-width: 18px; text-align: right; font-size: 9px; padding-top: 1px; }
+    .dl-code { color: #cdd6f4; white-space: pre-wrap; word-break: break-all; }
+    .dl-code.add { color: #a6e3a1; }
+    .dl-code.rem { color: #f38ba8; }
+    .dl-code.comment { color: #45475a; }
+    .dl-code.keyword { color: #89b4fa; }
+    .diff-stats { display: flex; gap: 6px; margin-top: 10px; }
+    .diff-stat { font-size: 9px; padding: 2px 7px; border-radius: 3px; }
+
+    /* ── Stats tab ──────────────────────────────────────────── */
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #313244; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { font-size: 10px; color: #585b70; }
+    .stat-val { font-size: 12px; font-weight: 600; color: #cdd6f4; font-family: monospace; }
+    .stat-val.pass { color: #a6e3a1; }
+    .stat-val.fail { color: #f38ba8; }
+    .mini-bar-wrap { margin-top: 12px; }
+    .mini-bar-label { font-size: 9px; color: #45475a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .mini-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+    .mini-bar-name { font-size: 9px; color: #585b70; width: 28px; }
+    .mini-bar-track { flex: 1; height: 6px; background: #313244; border-radius: 3px; overflow: hidden; }
+    .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .mini-bar-time { font-size: 9px; color: #45475a; font-family: monospace; width: 32px; text-align: right; }
   </style>
 </head>
 <body>
+
 <h1>Agentic Scrum Office</h1>
 <p class="subtitle">// dunder mifflin tech — scranton branch</p>
 
-<div class="office">
+<div class="main-layout">
 
-  <!-- PM Pod -->
-  <div class="pod" id="pod-pm" data-label="PM — Michael Scott">
-    <div class="desk-top">
-      <div class="monitor" id="mon-pm">
-        <div class="sline" id="pm-l1" style="width:80%"></div>
-        <div class="sline" id="pm-l2" style="width:55%"></div>
-        <div class="sline" id="pm-l3" style="width:70%"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
-        <div class="mug-top" style="background:#e74c3c;"></div>
-      </div>
-      <div class="paper-stack"></div>
-      <div class="chair"></div>
-    </div>
-    <div class="char-area">
-      <div class="bubble" id="bub-pm">IDLE</div>
-      <img class="sprite" id="spr-pm" alt="Michael"/>
-    </div>
-    <div class="pod-name" style="background:#0F6E56;">PM</div>
-  </div>
+  <!-- ── LEFT: office + board + statusbar + terminal ── -->
+  <div class="left-col">
+    <div class="office">
 
-  <!-- Dev Pod -->
-  <div class="pod" id="pod-dev" data-label="Dev — Jim Halpert">
-    <div class="desk-top">
-      <div class="monitor" id="mon-dev">
-        <div class="sline" id="dev-l1" style="width:90%"></div>
-        <div class="sline" id="dev-l2" style="width:60%"></div>
-        <div class="sline" id="dev-l3" style="width:75%"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
-        <div style="width:14px;height:10px;background:#f1c40f;border:1px solid #b7950b;font-size:5px;color:#7a6000;display:flex;align-items:center;justify-content:center;letter-spacing:0;">note</div>
-      </div>
-      <div class="mug-top" style="background:#27ae60;margin-top:2px;"></div>
-      <div class="chair"></div>
-    </div>
-    <div class="char-area">
-      <div class="bubble" id="bub-dev">IDLE</div>
-      <img class="sprite" id="spr-dev" alt="Jim"/>
-    </div>
-    <div class="pod-name" style="background:#185FA5;">Dev</div>
-  </div>
-
-  <!-- QA Pod -->
-  <div class="pod" id="pod-qa" data-label="QA — Dwight Schrute">
-    <div class="desk-top">
-      <div class="monitor" id="mon-qa">
-        <div class="sline" id="qa-l1" style="width:70%"></div>
-        <div class="sline" id="qa-l2" style="width:85%"></div>
-        <div class="sline" id="qa-l3" style="width:50%"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
-        <div style="display:flex;gap:2px;">
-          <div class="paper-stack" style="width:16px;height:12px;"></div>
-          <div class="paper-stack" style="width:16px;height:12px;transform:rotate(4deg);"></div>
+      <!-- PM Pod -->
+      <div class="pod" id="pod-pm" data-label="PM — Michael Scott">
+        <div class="desk-top">
+          <div class="monitor" id="mon-pm">
+            <div class="sline" id="pm-l1" style="width:80%"></div>
+            <div class="sline" id="pm-l2" style="width:55%"></div>
+            <div class="sline" id="pm-l3" style="width:70%"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+            <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+            <div class="mug-top" style="background:#e74c3c;"></div>
+          </div>
+          <div class="paper-stack"></div>
+          <div class="chair"></div>
         </div>
-      </div>
-      <div style="width:10px;height:16px;background:#e74c3c;border:1px solid #c0392b;margin-top:2px;"></div>
-      <div class="chair"></div>
-    </div>
-    <div class="char-area">
-      <div class="bubble" id="bub-qa">IDLE</div>
-      <img class="sprite" id="spr-qa" alt="Dwight"/>
-    </div>
-    <div class="pod-name" style="background:#854F0B;">QA</div>
-  </div>
-
-  <!-- Jira board replaces conference room -->
-  <div class="jira-board">
-    <div class="jira-topbar">
-      <div class="jira-logo">J</div>
-      <span class="jira-project-name">DMTECH / Bug Fix Board</span>
-      <span class="jira-sprint-badge">SPRINT 1 &bull; ACTIVE</span>
-    </div>
-    <div class="jira-columns">
-
-      <!-- Analysis -->
-      <div class="jcol" id="jcol-analysis">
-        <div class="jcol-header">
-          Analysis
-          <span class="count" id="cnt-analysis">0</span>
+        <div class="char-area">
+          <div class="bubble" id="bub-pm">IDLE</div>
+          <img class="sprite" id="spr-pm" alt="Michael"/>
         </div>
-        <div class="jticket" id="ticket-analysis">
-          <div class="jticket-id">DMTECH-42</div>
-          <div class="jticket-title" id="ticket-title">Bug detected</div>
-          <div class="jticket-footer">
-            <span class="jticket-type type-bug">BUG</span>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="jticket-priority" style="background:#FF5630;" title="High"></div>
-              <div class="jticket-avatar" style="background:#0F6E56;" title="Michael">M</div>
+        <div class="pod-name" style="background:#0F6E56;">PM</div>
+      </div>
+
+      <!-- Dev Pod -->
+      <div class="pod" id="pod-dev" data-label="Dev — Jim Halpert">
+        <div class="desk-top">
+          <div class="monitor" id="mon-dev">
+            <div class="sline" id="dev-l1" style="width:90%"></div>
+            <div class="sline" id="dev-l2" style="width:60%"></div>
+            <div class="sline" id="dev-l3" style="width:75%"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+            <div style="width:14px;height:10px;background:#f1c40f;border:1px solid #b7950b;font-size:5px;color:#7a6000;display:flex;align-items:center;justify-content:center;">note</div>
+          </div>
+          <div class="mug-top" style="background:#27ae60;margin-top:2px;"></div>
+          <div class="chair"></div>
+        </div>
+        <div class="char-area">
+          <div class="bubble" id="bub-dev">IDLE</div>
+          <img class="sprite" id="spr-dev" alt="Jim"/>
+        </div>
+        <div class="pod-name" style="background:#185FA5;">Dev</div>
+      </div>
+
+      <!-- QA Pod -->
+      <div class="pod" id="pod-qa" data-label="QA — Dwight Schrute">
+        <div class="desk-top">
+          <div class="monitor" id="mon-qa">
+            <div class="sline" id="qa-l1" style="width:70%"></div>
+            <div class="sline" id="qa-l2" style="width:85%"></div>
+            <div class="sline" id="qa-l3" style="width:50%"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div class="keyboard"><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div></div>
+            <div style="display:flex;gap:2px;">
+              <div class="paper-stack" style="width:16px;height:12px;"></div>
+              <div class="paper-stack" style="width:16px;height:12px;transform:rotate(4deg);"></div>
+            </div>
+          </div>
+          <div style="width:10px;height:16px;background:#e74c3c;border:1px solid #c0392b;margin-top:2px;"></div>
+          <div class="chair"></div>
+        </div>
+        <div class="char-area">
+          <div class="bubble" id="bub-qa">IDLE</div>
+          <img class="sprite" id="spr-qa" alt="Dwight"/>
+        </div>
+        <div class="pod-name" style="background:#854F0B;">QA</div>
+      </div>
+
+      <!-- Jira board -->
+      <div class="jira-board">
+        <div class="jira-topbar">
+          <div class="jira-logo">J</div>
+          <span class="jira-project-name">DMTECH / Bug Fix Board</span>
+          <span class="jira-sprint-badge">SPRINT 1 &bull; ACTIVE</span>
+        </div>
+        <div class="jira-columns">
+          <div class="jcol" id="jcol-analysis">
+            <div class="jcol-header">Analysis<span class="count" id="cnt-analysis">0</span></div>
+            <div class="jticket" id="ticket-analysis">
+              <div class="jticket-id">DMTECH-42</div>
+              <div class="jticket-title" id="t-analysis-title">Bug detected</div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#0F6E56;">M</div></div></div>
+            </div>
+          </div>
+          <div class="jcol" id="jcol-dev">
+            <div class="jcol-header">In Development<span class="count" id="cnt-dev">0</span></div>
+            <div class="jticket" id="ticket-dev">
+              <div class="jticket-id">DMTECH-42</div>
+              <div class="jticket-title" id="t-dev-title">Writing fix</div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#185FA5;">J</div></div></div>
+            </div>
+          </div>
+          <div class="jcol" id="jcol-qa">
+            <div class="jcol-header">QA Review<span class="count" id="cnt-qa">0</span></div>
+            <div class="jticket" id="ticket-qa">
+              <div class="jticket-id">DMTECH-42</div>
+              <div class="jticket-title" id="t-qa-title">Reviewing patch</div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
+            </div>
+          </div>
+          <div class="jcol" id="jcol-failed">
+            <div class="jcol-header">Failed QA<span class="count" id="cnt-failed">0</span></div>
+            <div class="jticket" id="ticket-failed">
+              <div class="jticket-id">DMTECH-42</div>
+              <div class="jticket-title">Needs rework</div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
+            </div>
+          </div>
+          <div class="jcol" id="jcol-done">
+            <div class="jcol-header">Done<span class="count" id="cnt-done">0</span></div>
+            <div class="jticket" id="ticket-done">
+              <div class="jticket-id">DMTECH-42</div>
+              <div class="jticket-title">Deployed to prod</div>
+              <div class="jticket-footer"><span class="jticket-type type-task">DONE</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#36B37E;"></div><div class="jticket-avatar" style="background:#36B37E;">✓</div></div></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- In Development -->
-      <div class="jcol" id="jcol-dev">
-        <div class="jcol-header">
-          In Development
-          <span class="count" id="cnt-dev">0</span>
-        </div>
-        <div class="jticket" id="ticket-dev">
-          <div class="jticket-id">DMTECH-42</div>
-          <div class="jticket-title">Writing fix</div>
-          <div class="jticket-footer">
-            <span class="jticket-type type-bug">BUG</span>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="jticket-priority" style="background:#FF5630;"></div>
-              <div class="jticket-avatar" style="background:#185FA5;" title="Jim">J</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div><!-- .office -->
 
-      <!-- QA Review -->
-      <div class="jcol" id="jcol-qa">
-        <div class="jcol-header">
-          QA Review
-          <span class="count" id="cnt-qa">0</span>
-        </div>
-        <div class="jticket" id="ticket-qa">
-          <div class="jticket-id">DMTECH-42</div>
-          <div class="jticket-title">Reviewing patch</div>
-          <div class="jticket-footer">
-            <span class="jticket-type type-bug">BUG</span>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="jticket-priority" style="background:#FF5630;"></div>
-              <div class="jticket-avatar" style="background:#854F0B;" title="Dwight">D</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Failed / Back to Dev -->
-      <div class="jcol" id="jcol-failed">
-        <div class="jcol-header">
-          Failed QA
-          <span class="count" id="cnt-failed">0</span>
-        </div>
-        <div class="jticket" id="ticket-failed">
-          <div class="jticket-id">DMTECH-42</div>
-          <div class="jticket-title">Needs rework</div>
-          <div class="jticket-footer">
-            <span class="jticket-type type-bug">BUG</span>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="jticket-priority" style="background:#FF5630;"></div>
-              <div class="jticket-avatar" style="background:#854F0B;">D</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Done / Prod -->
-      <div class="jcol" id="jcol-done">
-        <div class="jcol-header">
-          Done
-          <span class="count" id="cnt-done">0</span>
-        </div>
-        <div class="jticket" id="ticket-done">
-          <div class="jticket-id">DMTECH-42</div>
-          <div class="jticket-title">Deployed to prod</div>
-          <div class="jticket-footer">
-            <span class="jticket-type type-task">DONE</span>
-            <div style="display:flex;align-items:center;gap:4px;">
-              <div class="jticket-priority" style="background:#36B37E;"></div>
-              <div class="jticket-avatar" style="background:#36B37E;">✓</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div class="statusbar">
+      <div class="led" id="led"></div>
+      <span id="status-txt">WAITING FOR ORCHESTRATOR...</span>
+      <span class="apill" id="apill"></span>
     </div>
-  </div>
+    <div class="terminal" id="terminal"></div>
+  </div><!-- .left-col -->
 
-</div>
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel">
+    <div class="panel-tabs">
+      <div class="ptab active" id="ptab-ticket" onclick="switchTab('ticket')">Ticket</div>
+      <div class="ptab" id="ptab-diff"   onclick="switchTab('diff')">Diff</div>
+      <div class="ptab" id="ptab-stats"  onclick="switchTab('stats')">Stats</div>
+    </div>
+    <div class="panel-body">
 
-<div class="statusbar">
-  <div class="led" id="led"></div>
-  <span id="status-txt">WAITING FOR ORCHESTRATOR...</span>
-  <span class="apill" id="apill"></span>
-</div>
-<div class="terminal" id="terminal"></div>
+      <!-- Ticket tab -->
+      <div class="tab-pane active" id="tab-ticket">
+        <div id="ticket-empty" class="ticket-empty">NO TICKET YET<br><br>WAITING FOR PM...</div>
+        <div id="ticket-content" style="display:none;">
+          <div class="ticket-id-badge" id="tp-id">DMTECH-42</div>
+          <div class="ticket-section">
+            <div class="ts-label">Summary</div>
+            <div class="ts-val" id="tp-summary">—</div>
+          </div>
+          <div class="ts-divider"></div>
+          <div class="ticket-section">
+            <div class="ts-label">Bugs found</div>
+            <div id="tp-bugs"></div>
+          </div>
+          <div class="ts-divider"></div>
+          <div class="ticket-section">
+            <div class="ts-label">Assigned to</div>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+              <span class="ts-tag" style="background:#1a2d1a;color:#a6e3a1;">Michael → PM</span>
+              <span class="ts-tag" style="background:#1a2040;color:#89b4fa;">Jim → Dev</span>
+            </div>
+          </div>
+          <div id="qa-section" style="display:none;">
+            <div class="ts-divider"></div>
+            <div class="ticket-section">
+              <div class="ts-label">QA Verdict</div>
+              <div class="ts-val" id="tp-verdict">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diff tab -->
+      <div class="tab-pane" id="tab-diff">
+        <div class="diff-header">
+          <span id="diff-filename">patched_script.py</span>
+          <span id="diff-badge" style="font-size:9px;color:#45475a;">WAITING FOR DEV...</span>
+        </div>
+        <div id="diff-lines"></div>
+        <div class="diff-stats" id="diff-stats" style="display:none;">
+          <span class="diff-stat" style="background:#1a2e1a;color:#a6e3a1;" id="diff-adds"></span>
+          <span class="diff-stat" style="background:#2e1a1a;color:#f38ba8;" id="diff-rems"></span>
+        </div>
+      </div>
+
+      <!-- Stats tab -->
+      <div class="tab-pane" id="tab-stats">
+        <div class="stat-row"><span class="stat-label">Status</span><span class="stat-val" id="st-status">IDLE</span></div>
+        <div class="stat-row"><span class="stat-label">Attempts</span><span class="stat-val" id="st-attempts">0 / 3</span></div>
+        <div class="stat-row"><span class="stat-label">Bugs found</span><span class="stat-val" id="st-bugs">—</span></div>
+        <div class="stat-row"><span class="stat-label">Verdict</span><span class="stat-val" id="st-verdict">—</span></div>
+        <div class="stat-row"><span class="stat-label">Cycles run</span><span class="stat-val" id="st-cycles">0</span></div>
+        <div class="mini-bar-wrap">
+          <div class="mini-bar-label">Time per agent</div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-name">PM</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" id="bar-pm" style="width:0%;background:#a6e3a1;"></div></div>
+            <span class="mini-bar-time" id="time-pm">—</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-name">Dev</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" id="bar-dev" style="width:0%;background:#89b4fa;"></div></div>
+            <span class="mini-bar-time" id="time-dev">—</span>
+          </div>
+          <div class="mini-bar-row">
+            <span class="mini-bar-name">QA</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" id="bar-qa" style="width:0%;background:#fab387;"></div></div>
+            <span class="mini-bar-time" id="time-qa">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- .panel-body -->
+  </div><!-- .right-panel -->
+
+</div><!-- .main-layout -->
 
 <script>
   document.getElementById('spr-pm').src  = '../characters/michael.png';
   document.getElementById('spr-dev').src = '../characters/jim.png';
   document.getElementById('spr-qa').src  = '../characters/dwight.png';
 
+  // ── State ──────────────────────────────────────────────────
   let lastTs = 0, prevAttempt = 1;
   const AGENTS = ['pm','dev','qa'];
   const screenColors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387' };
   const bubColors    = { pm:'#0F6E56', dev:'#185FA5', qa:'#854F0B' };
 
+  // ── Tab switching ───────────────────────────────────────────
+  function switchTab(name) {
+    ['ticket','diff','stats'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('active', t === name);
+      document.getElementById('ptab-'+t).classList.toggle('active', t === name);
+    });
+  }
+
+  // ── Terminal log ────────────────────────────────────────────
   function log(text, cls) {
     const colors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387', pass:'#a6e3a1', fail:'#f38ba8', info:'#45475a' };
     const el = document.getElementById('terminal');
     const d = document.createElement('div');
     d.style.color = colors[cls] || '#45475a';
     d.textContent = '> ' + text;
-    el.appendChild(d);
-    el.scrollTop = el.scrollHeight;
+    el.appendChild(d); el.scrollTop = el.scrollHeight;
   }
 
+  // ── Office helpers ──────────────────────────────────────────
   function showBubble(agent, text) {
     AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
     const b = document.getElementById('bub-'+agent);
-    b.textContent = text.toUpperCase();
-    b.style.borderColor = bubColors[agent];
+    b.textContent = text.toUpperCase(); b.style.borderColor = bubColors[agent];
     b.classList.add('show');
   }
-
   function bounce(agent) {
     const el = document.getElementById('spr-'+agent);
-    el.classList.remove('bounce');
-    void el.offsetWidth;
-    el.classList.add('bounce');
+    el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce');
     el.addEventListener('animationend', () => el.classList.remove('bounce'), { once:true });
   }
-
   function activateScreen(agent) {
-    AGENTS.forEach(a => [1,2,3].forEach(n => {
-      const e = document.getElementById(a+'-l'+n);
-      if (e) e.style.background = '#313244';
-    }));
-    [1,2,3].forEach((n,i) => {
-      const e = document.getElementById(agent+'-l'+n);
-      if (e) setTimeout(() => e.style.background = screenColors[agent], i*100);
-    });
+    AGENTS.forEach(a => [1,2,3].forEach(n => { const e = document.getElementById(a+'-l'+n); if(e) e.style.background='#313244'; }));
+    [1,2,3].forEach((n,i) => { const e = document.getElementById(agent+'-l'+n); if(e) setTimeout(()=>e.style.background=screenColors[agent],i*100); });
   }
-
   function flashPod(agent, type) {
     const el = document.getElementById('pod-'+agent);
-    el.classList.remove('flash-pass','flash-fail');
-    void el.offsetWidth;
-    el.classList.add('flash-'+type);
-    el.addEventListener('animationend', () => el.classList.remove('flash-pass','flash-fail'), { once:true });
+    el.classList.remove('flash-pass','flash-fail'); void el.offsetWidth; el.classList.add('flash-'+type);
+    el.addEventListener('animationend',()=>el.classList.remove('flash-pass','flash-fail'),{once:true});
   }
-
   function qaWalksToDev() {
     const el = document.getElementById('spr-qa');
-    el.classList.remove('walking');
-    void el.offsetWidth;
-    el.classList.add('walking');
-    el.addEventListener('animationend', () => el.classList.remove('walking'), { once:true });
+    el.classList.remove('walking'); void el.offsetWidth; el.classList.add('walking');
+    el.addEventListener('animationend',()=>el.classList.remove('walking'),{once:true});
   }
 
-  // ── Jira board ─────────────────────────────────────────────
-  // Maps agent state -> which Jira column is active
+  // ── Jira board ──────────────────────────────────────────────
   const COLS = ['analysis','dev','qa','failed','done'];
-
-  function moveTicket(colId, titleOverride) {
-    // Hide all tickets and deactivate all columns
+  function moveTicket(colId, title) {
     COLS.forEach(c => {
       document.getElementById('ticket-'+c).classList.remove('visible','active-card','arriving');
       document.getElementById('jcol-'+c).classList.remove('col-active');
       document.getElementById('cnt-'+c).textContent = '0';
     });
-    // Show ticket in target column
     const ticket = document.getElementById('ticket-'+colId);
-    const col    = document.getElementById('jcol-'+colId);
-    if (titleOverride) {
-      const t = ticket.querySelector('.jticket-title');
-      if (t) t.textContent = titleOverride;
-    }
+    const titleEl = document.getElementById('t-'+colId+'-title');
+    if (titleEl && title) titleEl.textContent = title;
     ticket.classList.add('visible','active-card','arriving');
-    col.classList.add('col-active');
+    document.getElementById('jcol-'+colId).classList.add('col-active');
     document.getElementById('cnt-'+colId).textContent = '1';
   }
-
   function boardFromState(agent, status, verdict) {
-    if (agent === 'pm')   return moveTicket('analysis', status);
-    if (agent === 'dev')  return moveTicket('dev', status);
+    if (agent === 'pm')  return moveTicket('analysis', status);
+    if (agent === 'dev') return moveTicket('dev', status);
     if (agent === 'qa' && verdict === 'fail') return moveTicket('failed', 'Needs rework');
-    if (agent === 'qa')   return moveTicket('qa', status);
-    if (agent === 'done' && verdict === 'pass')  return moveTicket('done', 'Deployed to prod ✓');
-    if (agent === 'done' && verdict === 'fail')  return moveTicket('failed', 'Gave up');
+    if (agent === 'qa')  return moveTicket('qa', status);
+    if (agent === 'done' && verdict === 'pass') return moveTicket('done', 'Deployed to prod ✓');
+    if (agent === 'done' && verdict === 'fail') return moveTicket('failed', 'Gave up');
   }
 
+  // ── Ticket tab updater ──────────────────────────────────────
+  function updateTicketTab(ticketText) {
+    if (!ticketText || ticketText.length < 20) return;
+    document.getElementById('ticket-empty').style.display = 'none';
+    document.getElementById('ticket-content').style.display = 'block';
+
+    // Parse summary line
+    const summaryMatch = ticketText.match(/Summary:\s*(.+)/);
+    if (summaryMatch) document.getElementById('tp-summary').textContent = summaryMatch[1].trim();
+
+    // Parse bug entries
+    const bugsEl = document.getElementById('tp-bugs');
+    bugsEl.innerHTML = '';
+    const bugMatches = [...ticketText.matchAll(/\d+\.\s*Function:\s*(.+)\n\s*Problem:\s*(.+)\n\s*Expected:\s*(.+)/g)];
+    bugMatches.forEach((m, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'margin-bottom:8px;padding:7px;background:#1a1a2e;border-left:2px solid #f38ba8;border-radius:2px;';
+      div.innerHTML = `<div style="font-size:10px;color:#f38ba8;font-weight:600;margin-bottom:3px;">Bug ${i+1} — ${m[1].trim()}</div><div style="font-size:10px;color:#cdd6f4;margin-bottom:2px;">${m[2].trim()}</div><div style="font-size:9px;color:#a6e3a1;">Expected: ${m[3].trim()}</div>`;
+      bugsEl.appendChild(div);
+    });
+    // Update stats bugs count
+    document.getElementById('st-bugs').textContent = bugMatches.length || '—';
+  }
+
+  // ── Diff tab updater ────────────────────────────────────────
+  function updateDiffTab(original, patched) {
+    if (!original || !patched) return;
+    const origLines    = original.split('\n');
+    const patchLines   = patched.split('\n');
+    const container    = document.getElementById('diff-lines');
+    container.innerHTML = '';
+    let adds = 0, rems = 0, lineNum = 1;
+
+    // Simple line-by-line diff
+    const maxLen = Math.max(origLines.length, patchLines.length);
+    for (let i = 0; i < maxLen; i++) {
+      const o = origLines[i];
+      const p = patchLines[i];
+      if (o === p) {
+        addDiffLine(container, 'neu', lineNum, p || ''); lineNum++;
+      } else {
+        if (o !== undefined) { addDiffLine(container, 'rem', lineNum, '- ' + o); rems++; }
+        if (p !== undefined) { addDiffLine(container, 'add', lineNum, '+ ' + p); adds++; }
+        lineNum++;
+      }
+    }
+    document.getElementById('diff-badge').textContent = 'PATCH READY';
+    document.getElementById('diff-badge').style.color = '#a6e3a1';
+    document.getElementById('diff-stats').style.display = 'flex';
+    document.getElementById('diff-adds').textContent = '+' + adds + ' added';
+    document.getElementById('diff-rems').textContent = '-' + rems + ' removed';
+  }
+
+  function addDiffLine(container, type, num, text) {
+    // Only show lines that are changed or close to changes (keep diff tidy)
+    if (type === 'neu' && text.trim() === '' ) return;
+    const div = document.createElement('div');
+    div.className = 'diff-line';
+    const bar  = document.createElement('div'); bar.className = 'dl-bar ' + type;
+    const ln   = document.createElement('div'); ln.className  = 'dl-num'; ln.textContent = num;
+    const code = document.createElement('div'); code.className = 'dl-code ' + type;
+    // Minimal syntax highlight: keywords
+    let t = text || '';
+    code.textContent = t;
+    div.appendChild(bar); div.appendChild(ln); div.appendChild(code);
+    container.appendChild(div);
+  }
+
+  // ── Stats updater ───────────────────────────────────────────
+  let agentStartTimes = {}, agentDurations = {};
+  let cycleCount = parseInt(localStorage.getItem('cycleCount') || '0');
+  document.getElementById('st-cycles').textContent = cycleCount;
+
+  function tickStats(agent, verdict, attempt) {
+    document.getElementById('st-attempts').textContent = attempt + ' / 3';
+    if (verdict === 'pass') {
+      document.getElementById('st-verdict').textContent = 'PASS';
+      document.getElementById('st-verdict').className = 'stat-val pass';
+      document.getElementById('st-status').textContent = 'DONE';
+      cycleCount++;
+      localStorage.setItem('cycleCount', cycleCount);
+      document.getElementById('st-cycles').textContent = cycleCount;
+    } else if (verdict === 'fail') {
+      document.getElementById('st-verdict').textContent = 'FAIL';
+      document.getElementById('st-verdict').className = 'stat-val fail';
+    }
+    if (AGENTS.includes(agent)) {
+      document.getElementById('st-status').textContent = agent.toUpperCase() + ' WORKING';
+      // Track timing
+      const now = Date.now();
+      if (!agentStartTimes[agent]) agentStartTimes[agent] = now;
+      // Mark previous agent done
+      const prev = { pm: null, dev: 'pm', qa: 'dev' }[agent];
+      if (prev && agentStartTimes[prev] && !agentDurations[prev]) {
+        agentDurations[prev] = Math.round((now - agentStartTimes[prev]) / 1000);
+        updateTimingBars();
+      }
+    }
+    if (agent === 'done' && agentStartTimes['qa'] && !agentDurations['qa']) {
+      agentDurations['qa'] = Math.round((Date.now() - agentStartTimes['qa']) / 1000);
+      updateTimingBars();
+    }
+  }
+
+  function updateTimingBars() {
+    const times = { pm: agentDurations.pm||0, dev: agentDurations.dev||0, qa: agentDurations.qa||0 };
+    const maxT = Math.max(...Object.values(times), 1);
+    ['pm','dev','qa'].forEach(a => {
+      const t = times[a];
+      document.getElementById('bar-'+a).style.width = (t/maxT*100)+'%';
+      document.getElementById('time-'+a).textContent = t ? t+'s' : '—';
+    });
+  }
+
+  // ── File reader helpers (fetch workspace files) ─────────────
+  async function fetchFile(path) {
+    try {
+      const r = await fetch(path + '?t=' + Date.now());
+      return r.ok ? r.text() : null;
+    } catch { return null; }
+  }
+
+  let ticketLoaded = false, diffLoaded = false;
+
+  // ── Main state handler ──────────────────────────────────────
   function applyState(s) {
     if (s.ts === lastTs) return;
     lastTs = s.ts;
@@ -728,23 +726,52 @@
     AGENTS.forEach(a => document.getElementById('pod-'+a).classList.remove('active'));
     if (AGENTS.includes(agent)) {
       document.getElementById('pod-'+agent).classList.add('active');
-      showBubble(agent, status);
-      bounce(agent);
-      activateScreen(agent);
+      showBubble(agent, status); bounce(agent); activateScreen(agent);
       if (agent === 'qa' && verdict) flashPod('qa', verdict);
       if (agent === 'qa' && attempt > prevAttempt) setTimeout(qaWalksToDev, 500);
       prevAttempt = attempt;
+
+      // Auto-switch tabs
+      if (agent === 'pm')  switchTab('ticket');
+      if (agent === 'dev') switchTab('diff');
+      if (agent === 'qa')  switchTab('ticket');  // show ticket + QA result together
     } else {
       AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
+      if (agent === 'done') switchTab('stats');
     }
+
+    // Load files into side panel
+    if (agent === 'dev' && !ticketLoaded) {
+      ticketLoaded = true;
+      fetchFile('../workspace/ticket.txt').then(t => { if(t) updateTicketTab(t); });
+    }
+    if ((agent === 'qa' || agent === 'done') && !diffLoaded) {
+      diffLoaded = true;
+      Promise.all([
+        fetchFile('../workspace/buggy_script.py'),
+        fetchFile('../workspace/patched_script.py')
+      ]).then(([orig, patch]) => { if(orig && patch) updateDiffTab(orig, patch); });
+    }
+    if (agent === 'qa' || agent === 'done') {
+      // Show QA verdict in ticket tab
+      fetchFile('../workspace/qa_review.txt').then(r => {
+        if (!r) return;
+        document.getElementById('qa-section').style.display = 'block';
+        const v = r.includes('Verdict: PASS') ? '✓ PASS' : '✗ FAIL';
+        const col = r.includes('Verdict: PASS') ? '#a6e3a1' : '#f38ba8';
+        document.getElementById('tp-verdict').textContent = v;
+        document.getElementById('tp-verdict').style.color = col;
+      });
+    }
+
+    boardFromState(agent, status, verdict);
+    tickStats(agent, verdict, attempt);
 
     const cls = agent === 'done' ? (verdict === 'pass' ? 'pass' : 'fail') : (AGENTS.includes(agent) ? agent : 'info');
     log(message || status, cls);
-
-    // Update Jira board
-    boardFromState(agent, status, verdict);
   }
 
+  // ── Poll ────────────────────────────────────────────────────
   async function poll() {
     try {
       const r = await fetch('../workspace/state.json?t='+Date.now());

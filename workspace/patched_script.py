@@ -9,13 +9,13 @@ def flatten(nested_list, depth=1):
 
 def running_total(transactions):
     total = transactions[0]
-    for amount in transactions[1:]:
+    for amount in transactions[1:]:  # Changed from transactions[2:] to transactions[1:]
         total += amount
     return total
 
 def chunk_list(lst, size):
     chunks = []
-    for i in range(0, len(lst), size):
+    for i in range(0, len(lst), size):  # Changed range end from len(lst) - size to len(lst)
         chunks.append(lst[i:i + size])
     return chunks
 

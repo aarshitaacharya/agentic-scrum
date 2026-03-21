@@ -1,18 +1,18 @@
 TICKET
 ======
-Summary: The script contains logic errors in list manipulation functions, causing incorrect flattening depth, incomplete running totals, and missing list chunks.
+Summary: Several functions in the script have logic errors leading to incorrect output or ignored parameters.
 
 Bugs found:
 1. Function: flatten
-   Problem: The `depth` parameter is ignored, causing the function to always completely flatten the list, regardless of the specified depth.
-   Expected: The function should flatten the `nested_list` only up to the specified `depth`. For `depth=1`, it should only flatten the first level of nesting.
+   Problem: The `depth` parameter is provided but not utilized in the function's logic. The function always performs a full flatten, regardless of the specified `depth`.
+   Expected: The `depth` parameter should control how many levels of nesting are flattened. For `depth=1`, only the top-level lists should be flattened, leaving nested lists one level deep.
 
 2. Function: running_total
-   Problem: The loop iterates from `transactions[2:]`, skipping the second element (`transactions[1]`) from the total calculation.
-   Expected: The function should include all elements from `transactions[1]` onwards in the running total.
+   Problem: The calculation of the running total incorrectly skips the second element (`transactions[1]`) of the input list. The loop starts from `transactions[2:]`.
+   Expected: The running total should sum all elements in the `transactions` list, including `transactions[1]`.
 
 3. Function: chunk_list
-   Problem: The loop condition `len(lst) - size` causes the function to prematurely stop iterating, resulting in the last chunk(s) of the list being omitted from the `chunks` list.
-   Expected: The function should include all elements of the original list, creating chunks of the specified `size`, with any remaining elements forming a final, potentially smaller, chunk.
+   Problem: The loop condition `len(lst) - size` prevents the last chunk (or chunks, if `len(lst)` is not perfectly divisible by `size`) from being processed and added to the result.
+   Expected: The function should include all elements of the list, forming complete chunks and a final partial chunk if necessary. The loop should iterate up to `len(lst)`.
 
 End of ticket.

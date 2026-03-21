@@ -1,7 +1,7 @@
 QA REVIEW
 =========
-Bug 1 check: The `flatten` function now correctly uses the `depth` parameter. The recursive call decrements `depth`, and the base case `depth > 0` ensures flattening stops at the specified level. This addresses the issue of always completely flattening the list. — FIXED
-Bug 2 check: The `running_total` function's loop now correctly starts iterating from `transactions[1:]`, ensuring that the second element and all subsequent elements are included in the total sum. — FIXED
-Bug 3 check: The `chunk_list` function now uses `for i in range(0, len(lst), size):`, which correctly iterates through the entire list, and Python's slicing handles the last chunk gracefully, including all remaining elements. — FIXED
+Bug 1 check: The `flatten` function now includes `depth > 0` in its conditional check for recursion and decrements `depth` in the recursive call `flatten(item, depth - 1)`. This correctly utilizes the `depth` parameter to control the level of flattening. — FIXED
+Bug 2 check: The `running_total` function's loop now correctly starts iterating from `transactions[1:]` instead of `transactions[2:]`, ensuring that the second element of the list is included in the total. — FIXED
+Bug 3 check: The `chunk_list` function's `range` statement has been updated to `range(0, len(lst), size)`, which correctly iterates through the entire list, ensuring all elements are included in chunks, including any final partial chunk. — FIXED
 
 Verdict: PASS
