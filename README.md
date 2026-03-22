@@ -49,4 +49,4 @@ Then open http://localhost:8000 in your browser.
 
 1. Drop any .py file onto the drop zone
 2. Hit RUN — watch the agents go
-3. Check the side panel for ticket, diff, and stats
+3. Check the side panel for ticket, diff, and stats.
