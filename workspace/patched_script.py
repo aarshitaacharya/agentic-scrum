@@ -8,8 +8,8 @@ def flatten(nested_list, depth=1):
     return result
 
 def running_total(transactions):
-    total = 0
-    for amount in transactions:
+    total = transactions[0]
+    for amount in transactions[1:]:
         total += amount
     return total
 

@@ -1,18 +1,18 @@
 TICKET
 ======
-Summary: The script contains logic errors in list manipulation and summation functions, leading to incorrect outputs.
+Summary: Several list manipulation utility functions contain logic errors leading to incorrect output.
 
 Bugs found:
 1. Function: flatten
    Problem: The `depth` parameter is ignored, causing the function to always fully flatten the nested list regardless of the specified depth.
-   Expected: The function should flatten the list only up to the specified `depth`. For `depth=1`, `[[1, [2, 3]], [4, [5]]]` should result in `[1, [2, 3], 4, [5]]`.
+   Expected: The function should flatten the list only up to the specified `depth` level.
 
 2. Function: running_total
-   Problem: The function incorrectly calculates the total by skipping the second element of the `transactions` list (index 1) in its summation loop.
-   Expected: The function should sum all elements in the `transactions` list. For `[10, 20, 30, 40]`, the total should be `100`, not `80`.
+   Problem: The function incorrectly calculates the sum by skipping the second element of the `transactions` list due to an incorrect slicing in the loop (`transactions[2:]`).
+   Expected: The function should sum all elements in the `transactions` list.
 
 3. Function: chunk_list
-   Problem: The loop range for creating chunks is incorrect, causing the last chunk(s) of the list to be missed. This is particularly noticeable when the list length is a multiple of the chunk size.
-   Expected: The function should include all elements of the original list, forming complete or partial chunks as appropriate. For `[1,2,3,4,5,6]` with `size=2`, the output should be `[[1, 2], [3, 4], [5, 6]]`.
+   Problem: The function fails to include the last chunk(s) of the list because the `range` upper bound (`len(lst) - size`) is too restrictive, causing the loop to terminate prematurely.
+   Expected: The function should create all possible chunks of the specified `size`, including a potentially smaller final chunk if the list length is not perfectly divisible by `size`.
 
 End of ticket.
