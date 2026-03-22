@@ -1,18 +1,10 @@
 TICKET
 ======
-Summary: Several list manipulation utility functions contain logic errors leading to incorrect output.
+Summary: The Dev agent is not given the latest patched code from previous attempts, leading to repeated fixes on the original script.
 
 Bugs found:
-1. Function: flatten
-   Problem: The `depth` parameter is ignored, causing the function to always fully flatten the nested list regardless of the specified depth.
-   Expected: The function should flatten the list only up to the specified `depth` level.
-
-2. Function: running_total
-   Problem: The function incorrectly calculates the sum by skipping the second element of the `transactions` list due to an incorrect slicing in the loop (`transactions[2:]`).
-   Expected: The function should sum all elements in the `transactions` list.
-
-3. Function: chunk_list
-   Problem: The function fails to include the last chunk(s) of the list because the `range` upper bound (`len(lst) - size`) is too restrictive, causing the loop to terminate prematurely.
-   Expected: The function should create all possible chunks of the specified `size`, including a potentially smaller final chunk if the list length is not perfectly divisible by `size`.
+1. Function: main
+   Problem: In the Dev + QA loop, the `run_dev` function always receives the initial `code` (from `ORIGINAL_SCRIPT`) as its base. When QA finds issues and the ticket is updated with feedback, the Dev agent for subsequent attempts still works on the original script, not the code that was previously patched and reviewed. This prevents iterative refinement of the patch.
+   Expected: After each successful `run_dev` call and writing to `PATCHED_SCRIPT`, the `code` variable should be updated with the content of the `patch` (i.e., the current state of the patched script). This updated `code` should then be passed to `run_dev` in the next iteration if QA fails.
 
 End of ticket.

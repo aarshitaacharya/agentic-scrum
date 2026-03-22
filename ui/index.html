@@ -3,294 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Agentic Scrum Office</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #1e1e2e;
-      font-family: 'Courier New', monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px 16px 32px;
-      min-height: 100vh;
-    }
-
-    h1 { color: #cdd6f4; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3px; }
-    .subtitle { color: #45475a; font-size: 10px; letter-spacing: 2px; margin-bottom: 16px; }
-
-    /* ── Main two-column layout ─────────────────────────────── */
-    .main-layout {
-      width: 100%;
-      max-width: 1200px;
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 12px;
-      align-items: start;
-    }
-
-    /* left column: office + statusbar + dropzone */
-    .left-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-
-    /* ── Office floor ───────────────────────────────────────── */
-    .office {
-      background: #e8e2d8;
-      border: 3px solid #45475a;
-      position: relative;
-      background-image:
-        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
-      background-size: 32px 32px;
-      padding: 16px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      overflow: visible;
-    }
-    .office::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 8px;
-      background: repeating-linear-gradient(90deg, #8a8070 0px, #8a8070 20px, #a09080 20px, #a09080 40px);
-      border-bottom: 2px solid #6a6050;
-    }
-
-    /* ── Desk pods ──────────────────────────────────────────── */
-    .pod {
-      background: #e8eae7;
-      border: 2px solid #a09080;
-      border-radius: 2px;
-      padding: 10px 8px 8px;
-      display: flex; flex-direction: column; align-items: center;
-      position: relative;
-      transition: border-color 0.3s;
-      min-height: 300px;
-      overflow: visible;
-    }
-    .pod.active { border-color: #6a9060; box-shadow: inset 0 0 0 1px #6a9060; }
-    .pod.flash-pass { animation: fpass 0.9s ease; }
-    .pod.flash-fail { animation: ffail 0.9s ease; }
-    @keyframes fpass { 40% { background: #c4e0bc; border-color: #4a8040; } }
-    @keyframes ffail { 40% { background: #e8c0c0; border-color: #a04040; } }
-    .pod::before {
-      content: attr(data-label);
-      position: absolute; top: -2px; left: -2px; right: -2px; height: 18px;
-      background: #8a8070; border-radius: 2px 2px 0 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 8px; letter-spacing: 2px; color: #e8e4dc; text-transform: uppercase;
-    }
-
-    /* ── Desk surface ───────────────────────────────────────── */
-    .desk-top {
-      width: 100%; background: #c8a878; border: 2px solid #a08858;
-      border-radius: 2px; margin-top: 18px; padding: 6px;
-      display: flex; align-items: flex-start; gap: 6px; position: relative;
-    }
-    .desk-top::after {
-      content: ''; position: absolute; bottom: -5px; left: 2px; right: 2px;
-      height: 5px; background: #906838; border-radius: 0 0 2px 2px;
-    }
-    .monitor {
-      width: 56px; height: 38px; background: #1e1e2e;
-      border: 2px solid #45475a; border-radius: 1px; flex-shrink: 0;
-      display: flex; flex-direction: column; justify-content: center; padding: 4px 5px; gap: 3px;
-    }
-    .sline { height: 3px; border-radius: 1px; background: #313244; transition: background 0.3s; }
-    .keyboard {
-      width: 36px; height: 14px; background: #d4d0c8; border: 1px solid #a8a498;
-      border-radius: 1px; display: grid; grid-template-columns: repeat(6,1fr);
-      grid-template-rows: repeat(3,1fr); gap: 1px; padding: 2px; align-self: flex-end;
-    }
-    .key { background: #b8b4ac; border-radius: 1px; }
-    .mug-top { width: 11px; height: 11px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); align-self: flex-start; }
-    .paper-stack { width: 22px; height: 16px; background: #f5f0e8; border: 1px solid #c8c0b0; position: relative; align-self: flex-start; }
-    .paper-stack::before { content: ''; position: absolute; top: 3px; left: 2px; right: 2px; height: 2px; background: #c8c0b0; box-shadow: 0 4px 0 #c8c0b0; }
-    .chair {
-      width: 28px; height: 28px; border-radius: 50%; background: #c05050;
-      border: 2px solid #903030; position: absolute; bottom: -42px; left: 50%; transform: translateX(-50%);
-    }
-    .chair::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 16px; height: 16px; border-radius: 50%; background: #d06060; }
-
-    /* ── Character area ─────────────────────────────────────── */
-    .char-area {
-      width: 100%; display: flex; justify-content: center; align-items: flex-end;
-      margin-top: 48px; flex: 1; position: relative; overflow: visible;
-      min-height: 160px; background: #e8eae7;
-    }
-    .sprite {
-      image-rendering: pixelated; image-rendering: crisp-edges;
-      height: 150px; width: auto; transform: scaleX(-1); display: block; position: relative; z-index: 2;
-    }
-    .sprite.bounce { animation: spr-bounce 0.12s steps(1) 7; }
-    @keyframes spr-bounce {
-      0%,100% { transform: scaleX(-1) translateY(0); }
-      50%      { transform: scaleX(-1) translateY(-10px); }
-    }
-    .sprite.walking { animation: spr-walk 2s ease forwards; z-index: 10; }
-    @keyframes spr-walk {
-      0%   { transform: scaleX(-1) translateX(0); }
-      35%  { transform: scaleX(1) translateX(-90px); }
-      60%  { transform: scaleX(1) translateX(-200px); }
-      78%  { transform: scaleX(1) translateX(-200px); }
-      92%  { transform: scaleX(1) translateX(-90px); }
-      100% { transform: scaleX(-1) translateX(0); }
-    }
-
-    /* ── Chat bubble ────────────────────────────────────────── */
-    .bubble {
-      position: absolute; top: 0; left: 50%;
-      transform: translateX(-50%) scale(0.8);
-      background: #fff; border: 2px solid #45475a;
-      padding: 4px 8px 10px; font-size: 9px; letter-spacing: 0.5px; color: #1e1e2e;
-      white-space: nowrap; opacity: 0; transition: opacity 0.2s, transform 0.2s;
-      z-index: 20;
-      clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 60% 70%, 55% 100%, 50% 70%, 0% 70%);
-    }
-    .bubble.show { opacity: 1; transform: translateX(-50%) scale(1); }
-    .pod-name { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #fff; margin-top: 6px; padding: 2px 8px; border-radius: 1px; }
-
-    /* ── Jira board ─────────────────────────────────────────── */
-    .jira-board {
-      grid-column: 1 / -1;
-      background: #F4F5F7; border: 2px solid #a09080; border-radius: 3px; overflow: hidden;
-    }
-    .jira-topbar {
-      background: #0052CC; padding: 7px 12px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .jira-logo { width: 14px; height: 14px; background: #fff; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #0052CC; flex-shrink: 0; }
-    .jira-project-name { font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
-    .jira-sprint-badge { margin-left: auto; font-size: 9px; color: #B3D4FF; letter-spacing: 1px; }
-    .jira-columns { display: grid; grid-template-columns: repeat(5,1fr); gap: 0; padding: 10px 8px; min-height: 110px; }
-    .jcol { padding: 0 4px; border-right: 1px solid #DFE1E6; display: flex; flex-direction: column; gap: 6px; }
-    .jcol:last-child { border-right: none; }
-    .jcol-header { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5E6C84; padding: 4px 2px 6px; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 5px; }
-    .jcol-header .count { background: #DFE1E6; color: #5E6C84; font-size: 8px; border-radius: 10px; padding: 0 5px; font-weight: 600; }
-    .jcol.col-active .jcol-header { border-bottom-color: #0052CC; color: #0052CC; }
-    .jcol.col-active .jcol-header .count { background: #0052CC; color: #fff; }
-    .jticket { background: #fff; border: 1px solid #DFE1E6; border-radius: 3px; padding: 7px 8px; font-size: 10px; color: #172B4D; display: none; flex-direction: column; gap: 4px; }
-    .jticket.visible { display: flex; }
-    .jticket.active-card { box-shadow: 0 0 0 2px #0052CC; }
-    .jticket-id { font-size: 9px; color: #5E6C84; font-family: monospace; }
-    .jticket-title { font-weight: 600; font-size: 10px; color: #172B4D; line-height: 1.3; }
-    .jticket-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
-    .jticket-type { font-size: 8px; padding: 1px 5px; border-radius: 2px; font-weight: 600; }
-    .type-bug { background: #FFEBE6; color: #BF2600; }
-    .type-task { background: #E3FCEF; color: #006644; }
-    .jticket-avatar { width: 16px; height: 16px; border-radius: 50%; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #fff; }
-    .jticket-priority { width: 6px; height: 6px; border-radius: 50%; }
-    @keyframes card-arrive { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
-    .jticket.arriving { animation: card-arrive 0.35s ease; }
-
-    /* ── Status bar ─────────────────────────────────────────── */
-    .statusbar {
-      background: #181825; border: 2px solid #313244; border-top: none;
-      padding: 7px 14px; display: flex; align-items: center; gap: 10px;
-      font-size: 10px; color: #585b70; letter-spacing: 1px;
-    }
-    .led { width: 8px; height: 8px; background: #313244; border: 1px solid #45475a; flex-shrink: 0; }
-    .led.on   { background: #a6e3a1; box-shadow: 0 0 5px #a6e3a1; animation: blink 1s infinite; }
-    .led.pass { background: #a6e3a1; }
-    .led.fail { background: #f38ba8; }
-    @keyframes blink { 50% { opacity: 0.4; } }
-    #status-txt { color: #cdd6f4; }
-    .apill { margin-left: auto; font-size: 9px; padding: 1px 8px; border: 1px solid #313244; color: #585b70; }
-
-    /* ── File drop zone ─────────────────────────────────────── */
-    .dropzone {
-      background: #11111b; border: 2px dashed #313244; border-top: none;
-      padding: 16px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 8px;
-      cursor: pointer; transition: border-color 0.2s, background 0.2s;
-      min-height: 90px;
-    }
-    .dropzone:hover, .dropzone.dragover { border-color: #0052CC; background: #11152a; }
-    .dropzone.has-file { border-color: #a6e3a1; background: #0d1a0d; border-style: solid; }
-    .drop-icon { width: 28px; height: 28px; border: 2px solid #313244; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #45475a; flex-shrink: 0; }
-    .dropzone.has-file .drop-icon { border-color: #a6e3a1; color: #a6e3a1; }
-    .drop-label { font-size: 10px; color: #45475a; letter-spacing: 1px; text-align: center; line-height: 1.6; }
-    .dropzone.has-file .drop-label { color: #a6e3a1; }
-    .drop-sub { font-size: 9px; color: #313244; }
-    .dropzone.has-file .drop-sub { color: #3B6D11; }
-    #file-input { display: none; }
-
-    /* ── Right panel ────────────────────────────────────────── */
-    .right-panel {
-      background: #181825;
-      border: 2px solid #313244;
-      border-radius: 3px;
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      /* match total left col height roughly */
-      align-self: stretch;
-    }
-
-    /* tab bar */
-    .panel-tabs {
-      display: flex; background: #11111b;
-      border-bottom: 1px solid #313244; flex-shrink: 0;
-    }
-    .ptab {
-      flex: 1; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
-      padding: 8px 4px; color: #45475a; cursor: pointer; text-align: center;
-      border-bottom: 2px solid transparent; transition: color 0.15s;
-      user-select: none;
-    }
-    .ptab:hover { color: #585b70; }
-    .ptab.active { color: #cdd6f4; border-bottom-color: #0052CC; }
-
-    /* tab panels */
-    .panel-body { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
-    .panel-body::-webkit-scrollbar { width: 4px; }
-    .panel-body::-webkit-scrollbar-thumb { background: #313244; }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
-    /* ── Ticket tab ─────────────────────────────────────────── */
-    .ticket-section { margin-bottom: 14px; }
-    .ts-label { font-size: 9px; color: #45475a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
-    .ts-val { font-size: 11px; color: #cdd6f4; line-height: 1.6; }
-    .ts-tag { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 3px; margin: 2px 2px 0 0; }
-    .ts-divider { height: 1px; background: #313244; margin: 10px 0; }
-    .ticket-id-badge { font-size: 10px; color: #89b4fa; font-family: monospace; margin-bottom: 8px; }
-    .ticket-empty { font-size: 10px; color: #313244; text-align: center; margin-top: 40px; letter-spacing: 1px; }
-
-    /* ── Diff tab ───────────────────────────────────────────── */
-    .diff-header { font-size: 9px; color: #45475a; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .diff-line { display: flex; gap: 6px; font-size: 10px; font-family: monospace; line-height: 1.7; }
-    .dl-bar { width: 3px; border-radius: 1px; flex-shrink: 0; margin-top: 3px; height: 14px; }
-    .dl-bar.add { background: #a6e3a1; }
-    .dl-bar.rem { background: #f38ba8; }
-    .dl-bar.neu { background: transparent; }
-    .dl-num { color: #45475a; min-width: 18px; text-align: right; font-size: 9px; padding-top: 1px; }
-    .dl-code { color: #cdd6f4; white-space: pre-wrap; word-break: break-all; }
-    .dl-code.add { color: #a6e3a1; }
-    .dl-code.rem { color: #f38ba8; }
-    .dl-code.comment { color: #45475a; }
-    .dl-code.keyword { color: #89b4fa; }
-    .diff-stats { display: flex; gap: 6px; margin-top: 10px; }
-    .diff-stat { font-size: 9px; padding: 2px 7px; border-radius: 3px; }
-
-    /* ── Stats tab ──────────────────────────────────────────── */
-    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #313244; }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-label { font-size: 10px; color: #585b70; }
-    .stat-val { font-size: 12px; font-weight: 600; color: #cdd6f4; font-family: monospace; }
-    .stat-val.pass { color: #a6e3a1; }
-    .stat-val.fail { color: #f38ba8; }
-    .mini-bar-wrap { margin-top: 12px; }
-    .mini-bar-label { font-size: 9px; color: #45475a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-    .mini-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-    .mini-bar-name { font-size: 9px; color: #585b70; width: 28px; }
-    .mini-bar-track { flex: 1; height: 6px; background: #313244; border-radius: 3px; overflow: hidden; }
-    .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
-    .mini-bar-time { font-size: 9px; color: #45475a; font-family: monospace; width: 32px; text-align: right; }
-  </style>
+  <link rel="stylesheet" href="/ui/office.css">
 </head>
 <body>
 
 <h1>Agentic Scrum Office</h1>
-<p class="subtitle">// dunder mifflin tech — scranton branch</p>
+<p class="subtitle">Dunder Mifflin Tech — Scranton Branch</p>
 
 <div class="main-layout">
 
@@ -314,7 +32,7 @@
           <div class="chair"></div>
         </div>
         <div class="char-area">
-          <div class="bubble" id="bub-pm">IDLE</div>
+          <div class="bubble" id="bub-pm">Idle</div>
           <img class="sprite" id="spr-pm" alt="Michael"/>
         </div>
         <div class="pod-name" style="background:#0F6E56;">PM</div>
@@ -336,7 +54,7 @@
           <div class="chair"></div>
         </div>
         <div class="char-area">
-          <div class="bubble" id="bub-dev">IDLE</div>
+          <div class="bubble" id="bub-dev">Idle</div>
           <img class="sprite" id="spr-dev" alt="Jim"/>
         </div>
         <div class="pod-name" style="background:#185FA5;">Dev</div>
@@ -361,7 +79,7 @@
           <div class="chair"></div>
         </div>
         <div class="char-area">
-          <div class="bubble" id="bub-qa">IDLE</div>
+          <div class="bubble" id="bub-qa">Idle</div>
           <img class="sprite" id="spr-qa" alt="Dwight"/>
         </div>
         <div class="pod-name" style="background:#854F0B;">QA</div>
@@ -372,7 +90,7 @@
         <div class="jira-topbar">
           <div class="jira-logo">J</div>
           <span class="jira-project-name">DMTECH / Bug Fix Board</span>
-          <span class="jira-sprint-badge">SPRINT 1 &bull; ACTIVE</span>
+          <span class="jira-sprint-badge">Sprint 1 &bull; Active</span>
         </div>
         <div class="jira-columns">
           <div class="jcol" id="jcol-analysis">
@@ -380,7 +98,7 @@
             <div class="jticket" id="ticket-analysis">
               <div class="jticket-id">DMTECH-42</div>
               <div class="jticket-title" id="t-analysis-title">Bug detected</div>
-              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#0F6E56;">M</div></div></div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">Bug</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#0F6E56;">M</div></div></div>
             </div>
           </div>
           <div class="jcol" id="jcol-dev">
@@ -388,7 +106,7 @@
             <div class="jticket" id="ticket-dev">
               <div class="jticket-id">DMTECH-42</div>
               <div class="jticket-title" id="t-dev-title">Writing fix</div>
-              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#185FA5;">J</div></div></div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">Bug</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#185FA5;">J</div></div></div>
             </div>
           </div>
           <div class="jcol" id="jcol-qa">
@@ -396,7 +114,7 @@
             <div class="jticket" id="ticket-qa">
               <div class="jticket-id">DMTECH-42</div>
               <div class="jticket-title" id="t-qa-title">Reviewing patch</div>
-              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">Bug</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
             </div>
           </div>
           <div class="jcol" id="jcol-failed">
@@ -404,7 +122,7 @@
             <div class="jticket" id="ticket-failed">
               <div class="jticket-id">DMTECH-42</div>
               <div class="jticket-title">Needs rework</div>
-              <div class="jticket-footer"><span class="jticket-type type-bug">BUG</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
+              <div class="jticket-footer"><span class="jticket-type type-bug">Bug</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#FF5630;"></div><div class="jticket-avatar" style="background:#854F0B;">D</div></div></div>
             </div>
           </div>
           <div class="jcol" id="jcol-done">
@@ -412,7 +130,7 @@
             <div class="jticket" id="ticket-done">
               <div class="jticket-id">DMTECH-42</div>
               <div class="jticket-title">Deployed to prod</div>
-              <div class="jticket-footer"><span class="jticket-type type-task">DONE</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#36B37E;"></div><div class="jticket-avatar" style="background:#36B37E;">✓</div></div></div>
+              <div class="jticket-footer"><span class="jticket-type type-task">Done</span><div style="display:flex;align-items:center;gap:4px;"><div class="jticket-priority" style="background:#36B37E;"></div><div class="jticket-avatar" style="background:#36B37E;">✓</div></div></div>
             </div>
           </div>
         </div>
@@ -422,40 +140,41 @@
 
     <div class="statusbar">
       <div class="led" id="led"></div>
-      <span id="status-txt">WAITING FOR ORCHESTRATOR...</span>
+      <span id="status-txt">Waiting for orchestrator...</span>
       <span class="apill" id="apill"></span>
     </div>
+
     <input type="file" id="file-input" accept=".py"/>
     <div style="display:flex;gap:0;">
       <div class="dropzone" id="dropzone" style="flex:1;border-right:none;"
            onclick="document.getElementById('file-input').click()"
            ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <div class="drop-icon" id="drop-icon">+</div>
-        <div class="drop-label" id="drop-label">DROP .PY FILE HERE OR CLICK TO BROWSE</div>
-        <div class="drop-sub" id="drop-sub">no file selected</div>
+        <div class="drop-icon" id="drop-icon">↑</div>
+        <div class="drop-label" id="drop-label">Drop a .py file here or click to browse</div>
+        <div class="drop-sub" id="drop-sub">No file selected</div>
       </div>
       <button id="run-btn" onclick="runPipeline()"
         style="background:#0052CC;color:#fff;border:2px solid #0052CC;border-top:none;
-               padding:0 20px;font-family:monospace;font-size:10px;letter-spacing:2px;
-               cursor:pointer;white-space:nowrap;opacity:0.4;pointer-events:none;
-               text-transform:uppercase;transition:background 0.2s,opacity 0.2s;">
-        RUN &#9658;
+               padding:0 24px;cursor:pointer;white-space:nowrap;opacity:0.4;pointer-events:none;
+               transition:background 0.2s,opacity 0.2s;">
+        Run ▸
       </button>
     </div>
+
   </div><!-- .left-col -->
 
   <!-- ── RIGHT PANEL ── -->
   <div class="right-panel">
     <div class="panel-tabs">
       <div class="ptab active" id="ptab-ticket" onclick="switchTab('ticket')">Ticket</div>
-      <div class="ptab" id="ptab-diff"   onclick="switchTab('diff')">Diff</div>
-      <div class="ptab" id="ptab-stats"  onclick="switchTab('stats')">Stats</div>
+      <div class="ptab" id="ptab-diff"          onclick="switchTab('diff')">Diff</div>
+      <div class="ptab" id="ptab-stats"         onclick="switchTab('stats')">Stats</div>
     </div>
     <div class="panel-body">
 
       <!-- Ticket tab -->
       <div class="tab-pane active" id="tab-ticket">
-        <div id="ticket-empty" class="ticket-empty">NO TICKET YET<br><br>WAITING FOR PM...</div>
+        <div id="ticket-empty" class="ticket-empty">No ticket yet<br><br>Waiting for PM to analyse...</div>
         <div id="ticket-content" style="display:none;">
           <div class="ticket-id-badge" id="tp-id">DMTECH-42</div>
           <div class="ticket-section">
@@ -489,7 +208,7 @@
       <div class="tab-pane" id="tab-diff">
         <div class="diff-header">
           <span id="diff-filename">patched_script.py</span>
-          <span id="diff-badge" style="font-size:9px;color:#45475a;">WAITING FOR DEV...</span>
+          <span id="diff-badge" style="color:#45475a;">Waiting for Dev...</span>
         </div>
         <div id="diff-lines"></div>
         <div class="diff-stats" id="diff-stats" style="display:none;">
@@ -500,7 +219,7 @@
 
       <!-- Stats tab -->
       <div class="tab-pane" id="tab-stats">
-        <div class="stat-row"><span class="stat-label">Status</span><span class="stat-val" id="st-status">IDLE</span></div>
+        <div class="stat-row"><span class="stat-label">Status</span><span class="stat-val" id="st-status">Idle</span></div>
         <div class="stat-row"><span class="stat-label">Attempts</span><span class="stat-val" id="st-attempts">0 / 3</span></div>
         <div class="stat-row"><span class="stat-label">Bugs found</span><span class="stat-val" id="st-bugs">—</span></div>
         <div class="stat-row"><span class="stat-label">Verdict</span><span class="stat-val" id="st-verdict">—</span></div>
@@ -530,383 +249,6 @@
 
 </div><!-- .main-layout -->
 
-<script>
-  document.getElementById('spr-pm').src  = '/characters/michael.png';
-  document.getElementById('spr-dev').src = '/characters/jim.png';
-  document.getElementById('spr-qa').src  = '/characters/dwight.png';
-
-  // ── State ──────────────────────────────────────────────────
-  let lastTs = 0, prevAttempt = 1;
-  const AGENTS = ['pm','dev','qa'];
-  const screenColors = { pm:'#a6e3a1', dev:'#89b4fa', qa:'#fab387' };
-  const bubColors    = { pm:'#0F6E56', dev:'#185FA5', qa:'#854F0B' };
-
-  // ── Tab switching ───────────────────────────────────────────
-  function switchTab(name) {
-    ['ticket','diff','stats'].forEach(t => {
-      document.getElementById('tab-'+t).classList.toggle('active', t === name);
-      document.getElementById('ptab-'+t).classList.toggle('active', t === name);
-    });
-  }
-
-  // ── Terminal log ────────────────────────────────────────────
-  function log(text, cls) {
-    // log silently — no terminal UI anymore
-  }
-
-  // ── Office helpers ──────────────────────────────────────────
-  function showBubble(agent, text) {
-    AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
-    const b = document.getElementById('bub-'+agent);
-    b.textContent = text.toUpperCase(); b.style.borderColor = bubColors[agent];
-    b.classList.add('show');
-  }
-  function bounce(agent) {
-    const el = document.getElementById('spr-'+agent);
-    el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce');
-    el.addEventListener('animationend', () => el.classList.remove('bounce'), { once:true });
-  }
-  function activateScreen(agent) {
-    AGENTS.forEach(a => [1,2,3].forEach(n => { const e = document.getElementById(a+'-l'+n); if(e) e.style.background='#313244'; }));
-    [1,2,3].forEach((n,i) => { const e = document.getElementById(agent+'-l'+n); if(e) setTimeout(()=>e.style.background=screenColors[agent],i*100); });
-  }
-  function flashPod(agent, type) {
-    const el = document.getElementById('pod-'+agent);
-    el.classList.remove('flash-pass','flash-fail'); void el.offsetWidth; el.classList.add('flash-'+type);
-    el.addEventListener('animationend',()=>el.classList.remove('flash-pass','flash-fail'),{once:true});
-  }
-  function qaWalksToDev() {
-    const el = document.getElementById('spr-qa');
-    el.classList.remove('walking'); void el.offsetWidth; el.classList.add('walking');
-    el.addEventListener('animationend',()=>el.classList.remove('walking'),{once:true});
-  }
-
-  // ── Jira board ──────────────────────────────────────────────
-  const COLS = ['analysis','dev','qa','failed','done'];
-  function moveTicket(colId, title) {
-    COLS.forEach(c => {
-      document.getElementById('ticket-'+c).classList.remove('visible','active-card','arriving');
-      document.getElementById('jcol-'+c).classList.remove('col-active');
-      document.getElementById('cnt-'+c).textContent = '0';
-    });
-    const ticket = document.getElementById('ticket-'+colId);
-    const titleEl = document.getElementById('t-'+colId+'-title');
-    if (titleEl && title) titleEl.textContent = title;
-    ticket.classList.add('visible','active-card','arriving');
-    document.getElementById('jcol-'+colId).classList.add('col-active');
-    document.getElementById('cnt-'+colId).textContent = '1';
-  }
-  function boardFromState(agent, status, verdict) {
-    if (agent === 'pm')  return moveTicket('analysis', status);
-    if (agent === 'dev') return moveTicket('dev', status);
-    if (agent === 'qa' && verdict === 'fail') return moveTicket('failed', 'Needs rework');
-    if (agent === 'qa')  return moveTicket('qa', status);
-    if (agent === 'done' && verdict === 'pass') return moveTicket('done', 'Deployed to prod ✓');
-    if (agent === 'done' && verdict === 'fail') return moveTicket('failed', 'Gave up');
-  }
-
-  // ── Ticket tab updater ──────────────────────────────────────
-  function updateTicketTab(ticketText) {
-    if (!ticketText || ticketText.length < 20) return;
-    document.getElementById('ticket-empty').style.display = 'none';
-    document.getElementById('ticket-content').style.display = 'block';
-
-    // Parse summary line
-    const summaryMatch = ticketText.match(/Summary:\s*(.+)/);
-    if (summaryMatch) document.getElementById('tp-summary').textContent = summaryMatch[1].trim();
-
-    // Parse bug entries
-    const bugsEl = document.getElementById('tp-bugs');
-    bugsEl.innerHTML = '';
-    const bugMatches = [...ticketText.matchAll(/\d+\.\s*Function:\s*(.+)\n\s*Problem:\s*(.+)\n\s*Expected:\s*(.+)/g)];
-    bugMatches.forEach((m, i) => {
-      const div = document.createElement('div');
-      div.style.cssText = 'margin-bottom:8px;padding:7px;background:#1a1a2e;border-left:2px solid #f38ba8;border-radius:2px;';
-      div.innerHTML = `<div style="font-size:10px;color:#f38ba8;font-weight:600;margin-bottom:3px;">Bug ${i+1} — ${m[1].trim()}</div><div style="font-size:10px;color:#cdd6f4;margin-bottom:2px;">${m[2].trim()}</div><div style="font-size:9px;color:#a6e3a1;">Expected: ${m[3].trim()}</div>`;
-      bugsEl.appendChild(div);
-    });
-    // Update stats bugs count
-    document.getElementById('st-bugs').textContent = bugMatches.length || '—';
-  }
-
-  // ── Diff tab updater ────────────────────────────────────────
-  function updateDiffTab(original, patched) {
-    if (!original || !patched) return;
-    const origLines    = original.split('\n');
-    const patchLines   = patched.split('\n');
-    const container    = document.getElementById('diff-lines');
-    container.innerHTML = '';
-    let adds = 0, rems = 0, lineNum = 1;
-
-    // Simple line-by-line diff
-    const maxLen = Math.max(origLines.length, patchLines.length);
-    for (let i = 0; i < maxLen; i++) {
-      const o = origLines[i];
-      const p = patchLines[i];
-      if (o === p) {
-        addDiffLine(container, 'neu', lineNum, p || ''); lineNum++;
-      } else {
-        if (o !== undefined) { addDiffLine(container, 'rem', lineNum, '- ' + o); rems++; }
-        if (p !== undefined) { addDiffLine(container, 'add', lineNum, '+ ' + p); adds++; }
-        lineNum++;
-      }
-    }
-    document.getElementById('diff-badge').textContent = 'PATCH READY';
-    document.getElementById('diff-badge').style.color = '#a6e3a1';
-    document.getElementById('diff-stats').style.display = 'flex';
-    document.getElementById('diff-adds').textContent = '+' + adds + ' added';
-    document.getElementById('diff-rems').textContent = '-' + rems + ' removed';
-  }
-
-  function addDiffLine(container, type, num, text) {
-    // Only show lines that are changed or close to changes (keep diff tidy)
-    if (type === 'neu' && text.trim() === '' ) return;
-    const div = document.createElement('div');
-    div.className = 'diff-line';
-    const bar  = document.createElement('div'); bar.className = 'dl-bar ' + type;
-    const ln   = document.createElement('div'); ln.className  = 'dl-num'; ln.textContent = num;
-    const code = document.createElement('div'); code.className = 'dl-code ' + type;
-    // Minimal syntax highlight: keywords
-    let t = text || '';
-    code.textContent = t;
-    div.appendChild(bar); div.appendChild(ln); div.appendChild(code);
-    container.appendChild(div);
-  }
-
-  // ── Stats updater ───────────────────────────────────────────
-  let agentStartTimes = {}, agentDurations = {};
-  let cycleCount = parseInt(localStorage.getItem('cycleCount') || '0');
-  document.getElementById('st-cycles').textContent = cycleCount;
-
-  function tickStats(agent, verdict, attempt) {
-    document.getElementById('st-attempts').textContent = attempt + ' / 3';
-    if (verdict === 'pass') {
-      document.getElementById('st-verdict').textContent = 'PASS';
-      document.getElementById('st-verdict').className = 'stat-val pass';
-      document.getElementById('st-status').textContent = 'DONE';
-      cycleCount++;
-      localStorage.setItem('cycleCount', cycleCount);
-      document.getElementById('st-cycles').textContent = cycleCount;
-    } else if (verdict === 'fail') {
-      document.getElementById('st-verdict').textContent = 'FAIL';
-      document.getElementById('st-verdict').className = 'stat-val fail';
-    }
-    if (AGENTS.includes(agent)) {
-      document.getElementById('st-status').textContent = agent.toUpperCase() + ' WORKING';
-      // Track timing
-      const now = Date.now();
-      if (!agentStartTimes[agent]) agentStartTimes[agent] = now;
-      // Mark previous agent done
-      const prev = { pm: null, dev: 'pm', qa: 'dev' }[agent];
-      if (prev && agentStartTimes[prev] && !agentDurations[prev]) {
-        agentDurations[prev] = Math.round((now - agentStartTimes[prev]) / 1000);
-        updateTimingBars();
-      }
-    }
-    if (agent === 'done' && agentStartTimes['qa'] && !agentDurations['qa']) {
-      agentDurations['qa'] = Math.round((Date.now() - agentStartTimes['qa']) / 1000);
-      updateTimingBars();
-    }
-  }
-
-  function updateTimingBars() {
-    const times = { pm: agentDurations.pm||0, dev: agentDurations.dev||0, qa: agentDurations.qa||0 };
-    const maxT = Math.max(...Object.values(times), 1);
-    ['pm','dev','qa'].forEach(a => {
-      const t = times[a];
-      document.getElementById('bar-'+a).style.width = (t/maxT*100)+'%';
-      document.getElementById('time-'+a).textContent = t ? t+'s' : '—';
-    });
-  }
-
-  // ── File reader helpers (fetch workspace files) ─────────────
-  async function fetchFile(path) {
-    try {
-      const r = await fetch(path + '?t=' + Date.now());
-      return r.ok ? r.text() : null;
-    } catch { return null; }
-  }
-
-  let ticketLoaded = false, diffLoaded = false;
-
-  // ── Main state handler ──────────────────────────────────────
-  function applyState(s) {
-    if (s.ts === lastTs) return;
-    lastTs = s.ts;
-    const { agent, status, message, attempt, verdict } = s;
-
-    document.getElementById('status-txt').textContent = '['+agent.toUpperCase()+'] '+status.toUpperCase();
-    document.getElementById('apill').textContent = attempt > 1 ? 'ATTEMPT '+attempt : '';
-
-    const led = document.getElementById('led');
-    led.className = 'led';
-    if (agent === 'done') led.classList.add(verdict === 'pass' ? 'pass' : 'fail');
-    else if (AGENTS.includes(agent)) led.classList.add('on');
-
-    AGENTS.forEach(a => document.getElementById('pod-'+a).classList.remove('active'));
-    if (AGENTS.includes(agent)) {
-      document.getElementById('pod-'+agent).classList.add('active');
-      showBubble(agent, status); bounce(agent); activateScreen(agent);
-      if (agent === 'qa' && verdict) flashPod('qa', verdict);
-      if (agent === 'qa' && attempt > prevAttempt) setTimeout(qaWalksToDev, 500);
-      prevAttempt = attempt;
-
-      // Auto-switch tabs
-      if (agent === 'pm')  switchTab('ticket');
-      if (agent === 'dev') switchTab('diff');
-      if (agent === 'qa')  switchTab('ticket');  // show ticket + QA result together
-    } else {
-      AGENTS.forEach(a => document.getElementById('bub-'+a).classList.remove('show'));
-      if (agent === 'done') switchTab('stats');
-    }
-
-    // Load files into side panel
-    if (agent === 'dev' && !ticketLoaded) {
-      ticketLoaded = true;
-      fetchFile('/workspace/ticket.txt').then(t => { if(t) updateTicketTab(t); });
-    }
-    if ((agent === 'qa' || agent === 'done') && !diffLoaded) {
-      diffLoaded = true;
-      Promise.all([
-        fetchFile('/workspace/buggy_script.py'),
-        fetchFile('/workspace/patched_script.py')
-      ]).then(([orig, patch]) => { if(orig && patch) updateDiffTab(orig, patch); });
-    }
-    if (agent === 'qa' || agent === 'done') {
-      // Show QA verdict in ticket tab
-      fetchFile('/workspace/qa_review.txt').then(r => {
-        if (!r) return;
-        document.getElementById('qa-section').style.display = 'block';
-        const v = r.includes('Verdict: PASS') ? '✓ PASS' : '✗ FAIL';
-        const col = r.includes('Verdict: PASS') ? '#a6e3a1' : '#f38ba8';
-        document.getElementById('tp-verdict').textContent = v;
-        document.getElementById('tp-verdict').style.color = col;
-      });
-    }
-
-    boardFromState(agent, status, verdict);
-    tickStats(agent, verdict, attempt);
-
-    const cls = agent === 'done' ? (verdict === 'pass' ? 'pass' : 'fail') : (AGENTS.includes(agent) ? agent : 'info');
-    log(message || status, cls);
-  }
-
-  // ── Poll ────────────────────────────────────────────────────
-  async function poll() {
-    try {
-      const r = await fetch('/workspace/state.json?t='+Date.now());
-      if (r.ok) applyState(await r.json());
-    } catch(_) {
-      // Server not ready yet — retry silently
-    }
-    setTimeout(poll, 1000);
-  }
-
-  // ── Drop zone ────────────────────────────────────────────
-  function onDragOver(e) {
-    e.preventDefault();
-    document.getElementById('dropzone').classList.add('dragover');
-  }
-  function onDragLeave() {
-    document.getElementById('dropzone').classList.remove('dragover');
-  }
-  function onDrop(e) {
-    e.preventDefault();
-    document.getElementById('dropzone').classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-  }
-  document.getElementById('file-input').addEventListener('change', function() {
-    if (this.files[0]) handleFile(this.files[0]);
-  });
-
-  function handleFile(file) {
-    if (!file.name.endsWith('.py')) {
-      document.getElementById('drop-label').textContent = 'PYTHON FILES ONLY (.py)';
-      return;
-    }
-    // POST the file to the server — it writes it to workspace/buggy_script.py
-    const formData = new FormData();
-    formData.append('file', file);
-
-    document.getElementById('drop-label').textContent = 'UPLOADING...';
-
-    fetch('/upload', { method: 'POST', body: formData })
-      .then(r => r.json())
-      .then(data => {
-        if (data.ok) {
-          const dz = document.getElementById('dropzone');
-          dz.classList.add('has-file');
-          document.getElementById('drop-icon').textContent = '\u2713';
-          document.getElementById('drop-label').textContent = file.name.toUpperCase();
-          document.getElementById('drop-sub').textContent = data.lines + ' lines — ready to run';
-          // Enable the Run button
-          const btn = document.getElementById('run-btn');
-          btn.style.opacity = '1';
-          btn.style.pointerEvents = 'auto';
-        } else {
-          document.getElementById('drop-label').textContent = 'ERROR: ' + data.error;
-        }
-      })
-      .catch(() => {
-        document.getElementById('drop-label').textContent = 'UPLOAD FAILED — IS SERVER.PY RUNNING?';
-      });
-  }
-
-  function runPipeline() {
-    const btn = document.getElementById('run-btn');
-    btn.textContent = 'RUNNING...';
-    btn.style.background = '#003d99';
-    btn.style.pointerEvents = 'none';
-
-    // Reset panel state for new run
-    ticketLoaded = false;
-    diffLoaded   = false;
-    agentStartTimes = {};
-    agentDurations  = {};
-    document.getElementById('ticket-empty').style.display = 'block';
-    document.getElementById('ticket-content').style.display = 'none';
-    document.getElementById('diff-lines').innerHTML = '';
-    document.getElementById('diff-badge').textContent = 'WAITING FOR DEV...';
-    document.getElementById('diff-badge').style.color = '#45475a';
-    document.getElementById('diff-stats').style.display = 'none';
-    document.getElementById('qa-section').style.display = 'none';
-    switchTab('ticket');
-
-    fetch('/run', { method: 'POST' })
-      .then(r => r.json())
-      .then(data => {
-        if (!data.ok) {
-          btn.textContent = 'RUN \u25b8';
-          btn.style.background = '#0052CC';
-          btn.style.pointerEvents = 'auto';
-          alert(data.error);
-        }
-        // Poll /status to re-enable button when done
-        pollRunStatus();
-      })
-      .catch(() => {
-        btn.textContent = 'RUN \u25b8';
-        btn.style.pointerEvents = 'auto';
-      });
-  }
-
-  function pollRunStatus() {
-    fetch('/status')
-      .then(r => r.json())
-      .then(data => {
-        if (data.running) {
-          setTimeout(pollRunStatus, 2000);
-        } else {
-          const btn = document.getElementById('run-btn');
-          btn.textContent = 'RUN AGAIN \u25b8';
-          btn.style.background = '#0052CC';
-          btn.style.pointerEvents = 'auto';
-        }
-      });
-  }
-
-  poll();
-</script>
+<script src="/ui/app.js"></script>
 </body>
 </html>
