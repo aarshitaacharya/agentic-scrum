@@ -6,9 +6,7 @@
 
 ## Demo
 
-https://github.com/your-username/agentic-scrum/raw/main/demo.mov
-
-*(Drop `demo.mov` in the root of this folder and link it above, or embed it in GitHub by dragging it into the README editor)*
+https://github.com/user-attachments/assets/ad9e88f4-7e0a-479e-802c-19c6aaeb086f
 
 ---
 
