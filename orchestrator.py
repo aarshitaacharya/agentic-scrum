@@ -1,165 +1,150 @@
-# orchestrator.py
-# Phase 4 — same pipeline as Phase 2, but now writes state.json at every
-# step so the desk UI can animate in real time.
-#
-# Run:  python orchestrator.py
-# Then open ui/index.html in your browser (via a local server — see README).
+"""
+orchestrator.py — the command line entry point.
 
-import os
-import json
-import time
-import google.generativeai as genai
+The pipeline logic used to live here. It now lives in handlers.py (what each
+agent does) and runtime.py (what drives them), because those two need to be
+callable from a Lambda as well as from a terminal. What is left here is
+argument parsing and printing.
 
-from agents.pm_prompt  import PM_SYSTEM_PROMPT,  PM_USER_TEMPLATE
-from agents.dev_prompt import DEV_SYSTEM_PROMPT, DEV_USER_TEMPLATE
-from agents.qa_prompt  import QA_SYSTEM_PROMPT,  QA_USER_TEMPLATE
+    python orchestrator.py                 run one full cycle, block until done
+    python orchestrator.py --backends      show the AWS probe and exit
+    python orchestrator.py --publish       publish run.requested and exit
+    python orchestrator.py --agent dev     run one agent as a long-lived consumer
+    python orchestrator.py --dlq           inspect the dead letter queue
 
-# ── Config ────────────────────────────────────────────────────────────────────
+The `--agent` mode is the useful hybrid: point it at a deployed stack by
+exporting SCRUM_TOPIC_ARN and friends, and this process becomes a consumer of
+the real SQS queue — the same code a Lambda would run, but with a debugger
+attached and logs in your terminal instead of CloudWatch.
+"""
 
-API_KEY    = os.environ.get("GEMINI_API_KEY", "PASTE_YOUR_KEY_HERE")
-MODEL_NAME = "gemini-2.5-flash"
+from __future__ import annotations
 
-ORIGINAL_SCRIPT = "workspace/buggy_script.py"
-TICKET_FILE     = "workspace/ticket.txt"
-PATCHED_SCRIPT  = "workspace/patched_script.py"
-QA_REVIEW_FILE  = "workspace/qa_review.txt"
-STATE_FILE      = "workspace/state.json"   # the UI watches this file
+import argparse
+import sys
 
-MAX_RETRIES = 3
+from scrum.config import SETTINGS, resolve_backends
+from scrum.runtime import publish_run_request, run_pipeline
+from scrum import ui_state
 
-# ── Setup ─────────────────────────────────────────────────────────────────────
 
-genai.configure(api_key=API_KEY)
-
-def make_agent(system_prompt):
-    return genai.GenerativeModel(
-        model_name=MODEL_NAME,
-        system_instruction=system_prompt,
-    )
-
-pm_agent  = make_agent(PM_SYSTEM_PROMPT)
-dev_agent = make_agent(DEV_SYSTEM_PROMPT)
-qa_agent  = make_agent(QA_SYSTEM_PROMPT)
-
-# ── State writer ──────────────────────────────────────────────────────────────
-
-def set_state(agent, status, message="", attempt=1, verdict=""):
-    """
-    Write the current pipeline state to state.json.
-    The UI polls this file and updates the animation accordingly.
-
-    Fields:
-      agent   — which agent is active: "pm", "dev", "qa", "done"
-      status  — short action label shown in the chat bubble
-      message — longer text for the log panel
-      attempt — current retry number (shown in UI)
-      verdict — "pass", "fail", or "" (controls green/red flash on QA desk)
-    """
-    state = {
-        "agent":   agent,
-        "status":  status,
-        "message": message,
-        "attempt": attempt,
-        "verdict": verdict,
-        "ts":      time.time(),   # timestamp so UI knows it's a fresh update
-    }
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2)
-
-# ── File helpers ──────────────────────────────────────────────────────────────
-
-def read_file(path):
-    with open(path, "r") as f:
-        return f.read()
-
-def write_file(path, content):
-    with open(path, "w") as f:
-        f.write(content)
-    print(f"     -> saved to {path}")
-
-# ── Agent callers ─────────────────────────────────────────────────────────────
-
-def run_pm(code):
-    print("  [PM] Analysing bugs...")
-    set_state("pm", "analysing code...", "Reading the script for logic bugs")
-    response = pm_agent.generate_content(PM_USER_TEMPLATE.format(code=code))
-    set_state("pm", "writing ticket", "Ticket written to workspace/ticket.txt")
-    return response.text
-
-def run_dev(ticket, code, attempt):
-    print("  [Dev] Writing fix...")
-    set_state("dev", "reading ticket", f"Attempt {attempt} — reading PM ticket", attempt)
-    response = dev_agent.generate_content(
-        DEV_USER_TEMPLATE.format(ticket=ticket, code=code)
-    )
-    patch = response.text.strip()
-    if patch.startswith("```"):
-        lines = patch.splitlines()
-        patch = "\n".join(lines[1:-1])
-    set_state("dev", "patch written", f"Attempt {attempt} — patch saved", attempt)
-    return patch
-
-def run_qa(ticket, patched_code, attempt):
-    print("  [QA] Reviewing patch...")
-    set_state("qa", "reviewing patch", f"Attempt {attempt} — checking Dev's fix", attempt)
-    response = qa_agent.generate_content(
-        QA_USER_TEMPLATE.format(ticket=ticket, patched_code=patched_code)
-    )
-    return response.text
-
-def qa_passed(review_text):
-    return "Verdict: PASS" in review_text
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-def main():
-    print("\n=== AGENTIC SCRUM — Phase 4 ===\n")
-
-    # Reset state so UI shows idle on fresh run
-    set_state("idle", "waiting...", "Press run to start")
-
-    # ── PM ────────────────────────────────────────────────────────────────────
-    print("--- PM Agent ---")
-    code   = read_file(ORIGINAL_SCRIPT)
-    ticket = run_pm(code)
-    write_file(TICKET_FILE, ticket)
+def _print_banner() -> None:
+    decision = resolve_backends(SETTINGS)
+    ui_state.set_backend(decision.mode, decision.reason)
+    print("\n=== AGENTIC SCRUM ===")
+    print(decision.banner())
     print()
 
-    # ── Dev + QA loop ─────────────────────────────────────────────────────────
-    attempt = 0
-    passed  = False
 
-    while attempt < MAX_RETRIES:
-        attempt += 1
-        print(f"--- Dev Agent (attempt {attempt}/{MAX_RETRIES}) ---")
-        patch = run_dev(ticket, code, attempt)
-        write_file(PATCHED_SCRIPT, patch)
-        print()
+def _run_single_agent(name: str) -> int:
+    """
+    Run one agent as a standalone consumer, forever.
 
-        print(f"--- QA Agent (attempt {attempt}/{MAX_RETRIES}) ---")
-        review = run_qa(ticket, patch, attempt)
-        write_file(QA_REVIEW_FILE, review)
-        print()
+    This is what a Lambda does, minus the Lambda. Against the local bus it is
+    not much use on its own (nothing else is publishing); against a deployed
+    stack it is the fastest way to debug an agent, because you get a real
+    traceback instead of a CloudWatch entry.
+    """
+    from scrum.bus import get_bus
+    from scrum.handlers import AGENT_HANDLERS
 
-        if qa_passed(review):
-            passed = True
-            set_state("qa", "all tests passed!", f"Passed on attempt {attempt}", attempt, verdict="pass")
-            break
-        else:
-            set_state("qa", "FAILED — pinging Dev", "QA found issues, sending error log", attempt, verdict="fail")
-            print("  [QA] FAIL — pinging Dev for another attempt...")
-            time.sleep(1)   # small pause so UI can show the fail state before moving on
-            ticket = ticket + "\n\n--- QA FEEDBACK (attempt " + str(attempt) + ") ---\n" + review
+    if name not in AGENT_HANDLERS:
+        print(f"Unknown agent '{name}'. Choose from: {', '.join(AGENT_HANDLERS)}")
+        return 1
 
-    # ── Final ─────────────────────────────────────────────────────────────────
-    print("=" * 40)
-    if passed:
-        set_state("done", "bug fixed!", f"Fixed in {attempt} attempt(s)", attempt, verdict="pass")
-        print(f"PASS — fixed in {attempt} attempt(s).")
-    else:
-        set_state("done", "gave up", f"Failed after {MAX_RETRIES} attempts", attempt, verdict="fail")
-        print(f"GAVE UP after {MAX_RETRIES} attempts.")
-    print("=" * 40 + "\n")
+    _print_banner()
+    bus = get_bus(SETTINGS)
+    handler = AGENT_HANDLERS[name]
+    print(f"[{name}] consuming its queue — ctrl-c to stop\n")
+
+    try:
+        while True:
+            for message in bus.receive(name, wait_seconds=SETTINGS.long_poll_seconds):
+                event = message.event
+                print(f"[{name}] <- {event.describe()}")
+                try:
+                    emitted = handler(event, SETTINGS) or []
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[{name}] handler raised {type(exc).__name__}: {exc} — not acking")
+                    bus.nack(message)
+                    continue
+                for outgoing in emitted:
+                    bus.publish(outgoing)
+                    print(f"[{name}] -> {outgoing.describe()}")
+                bus.ack(message)
+    except KeyboardInterrupt:
+        print(f"\n[{name}] stopped")
+        return 0
+
+
+def _show_dlq() -> int:
+    """What got stuck. On a healthy system this is empty."""
+    from scrum.bus import get_bus
+
+    bus = get_bus(SETTINGS)
+    if bus.mode == "local":
+        letters = getattr(bus, "dead_letters", [])
+        if not letters:
+            print("Dead letter queue is empty.")
+            return 0
+        print(f"{len(letters)} dead letter(s):")
+        for event in letters:
+            print(f"  {event.describe()}")
+        return 0
+
+    print("On AWS, inspect the DLQ with:")
+    print("  aws sqs receive-message --queue-url $(aws sqs get-queue-url "
+          "--queue-name agentic-scrum-dlq --query QueueUrl --output text) "
+          "--max-number-of-messages 10")
+    return 0
+
+
+def main() -> int:
+    try:
+        return _main()
+    except RuntimeError as exc:
+        # The one RuntimeError we raise deliberately: AGENTIC_SCRUM_BACKEND=aws
+        # with a failed probe. A one-line message beats a traceback.
+        print(f"\n{exc}\n")
+        return 2
+    except KeyboardInterrupt:
+        print("\nInterrupted.")
+        return 130
+
+
+def _main() -> int:
+    parser = argparse.ArgumentParser(description="Agentic Scrum — multi-agent bug fixing")
+    parser.add_argument("--backends", action="store_true",
+                        help="show which backend the probe chose, and why")
+    parser.add_argument("--publish", action="store_true",
+                        help="publish run.requested and exit without waiting")
+    parser.add_argument("--agent", metavar="NAME",
+                        help="run one agent (pm/dev/qa/supervisor) as a consumer")
+    parser.add_argument("--dlq", action="store_true", help="inspect the dead letter queue")
+    parser.add_argument("--timeout", type=float, default=600,
+                        help="give up on a run after this many seconds (default: 600)")
+    args = parser.parse_args()
+
+    if args.backends:
+        _print_banner()
+        return 0
+
+    if args.dlq:
+        return _show_dlq()
+
+    if args.agent:
+        return _run_single_agent(args.agent)
+
+    if args.publish:
+        _print_banner()
+        run_id = publish_run_request(SETTINGS)
+        print(f"Published run.requested for run {run_id}.")
+        print("Nothing is waiting on it — the agents pick it up from the queue.")
+        return 0
+
+    outcome = run_pipeline(SETTINGS, timeout=args.timeout)
+    return 0 if outcome.get("verdict") == "pass" else 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

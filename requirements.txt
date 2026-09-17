@@ -1,2 +1,23 @@
-google-generativeai>=0.8.0
+# Runtime dependencies. This file is what SAM installs into the Lambda bundle,
+# so keep it lean — dev-only tools belong in requirements-dev.txt.
+
+# ── Agents ────────────────────────────────────────────────────────────────────
+# langchain-core carries the pieces this project actually uses: the chat-model
+# interface, message types, and StructuredTool (which generates each tool's
+# schema from its signature). The ReAct loop itself is in agents/react.py —
+# see that file for why it is written out rather than imported.
+langchain-core>=1.0.0
+langchain-google-genai>=2.0.0
+
+# ── Web ───────────────────────────────────────────────────────────────────────
+# Only server.py needs these. They are small, and keeping one manifest that
+# works for both the local server and the Lambda bundle is worth ~2 MB.
 flask>=3.0.0
+python-dotenv>=1.0.0
+
+# ── AWS ───────────────────────────────────────────────────────────────────────
+# Optional at runtime: without credentials (or without boto3 at all) the probe
+# in config.py falls back to the in-process bus and the local workspace.
+# The Lambda runtime already ships boto3, but pinning it here keeps local and
+# deployed behaviour identical.
+boto3>=1.34.0

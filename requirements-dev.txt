@@ -1,0 +1,5 @@
+# Development only — never installed into the Lambda bundle.
+-r requirements.txt
+
+pytest>=8.0.0      # the test suite
+PyYAML>=6.0        # infra/check_routing.py parses the SAM template

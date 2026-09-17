@@ -1,6 +1,14 @@
 # Agentic Scrum Office
 
-> A multi-agent bug-fixing system built with Gemini 2.5 Flash — free, local, and animated.
+> Three LLM agents — PM, Dev and QA — triage, patch and verify bugs in Python
+> files, handing work to each other over an event bus. You watch them do it in
+> a pixel-art office.
+
+Runs two ways from one codebase: **on AWS** (SNS → SQS → Lambda), or **locally**
+with an in-process bus that reproduces the same queue semantics. It picks
+automatically.
+
+Deployed and verified on AWS. See [Status](#status).
 
 ---
 
@@ -10,121 +18,188 @@ https://github.com/user-attachments/assets/ad9e88f4-7e0a-479e-802c-19c6aaeb086f
 
 ---
 
+## Quick start
+
+```bash
+pip install -r requirements.txt
+echo 'GEMINI_API_KEY=your-key' > .env     # free: https://aistudio.google.com/app/apikey
+python server.py                          # -> http://localhost:8000
+```
+
+Drop a `.py` file, hit **RUN**. No AWS account needed — it falls back to the
+local bus and tells you so in the status bar.
+
+---
+
 ## What it does
 
-Three AI agents — PM, Dev, and QA — collaborate autonomously to analyse, fix, and verify bugs in any Python file you drop in. You watch them work in a pixel-art office in real time.
+| Agent | Character | Job |
+|---|---|---|
+| **PM** | Michael | Reads the file, **runs it**, writes a ticket citing what it observed |
+| **Dev** | Jim | Patches the code, runs the patch, critiques its own work before handing off |
+| **QA** | Dwight | Reads the diff, **runs the patched file**, returns PASS or a specific FAIL |
 
-- **PM (Michael Scott)** reads your script, identifies logic bugs, and writes a structured ticket
-- **Dev (Jim Halpert)** reads the ticket and patches the code
-- **QA (Dwight Schrute)** reviews the patch — if it fails, he walks over to Jim's desk and sends the error back for another attempt (up to 3 tries)
-- On pass, the ticket moves to **Done / Prod** on the Jira board
+A FAIL goes back to Dev with the objection attached. After three failed cycles
+the run escalates instead of looping.
 
----
-
-## Features
-
-**The office**
-- Top-down pixel-art office with three character cabins — Michael, Jim, and Dwight
-- Characters bounce when active, screens light up in their colour, chat bubbles show live status
-- On a QA fail, Dwight animates across to Jim's desk to re-ping him
-
-**Jira board**
-- Live kanban board built into the office floor: Analysis → In Development → QA Review → Failed QA → Done
-- Ticket card moves columns automatically as the pipeline progresses
-
-**Side panel — three tabs, auto-switching**
-- *Ticket tab* — shows the PM's structured bug report parsed into cards, with QA verdict appended at the end
-- *Diff tab* — line-by-line diff of original vs patched file, GitHub-style red/green highlighting
-- *Stats tab* — attempt count, bugs found, verdict, total cycles run, and a timing bar chart showing seconds per agent
-
-**File drop zone**
-- Drag and drop any `.py` file — it uploads directly to the server and replaces the target file
-- Hit **RUN ▸** to kick off the pipeline — button shows live state and re-enables when done
-
-**Single-command server**
-- One Flask server replaces the old two-terminal setup
-- Serves the UI, handles file uploads, spawns the orchestrator, and exposes a `/status` endpoint
+What makes them agents rather than three prompts in a row: **they use tools.**
+The PM's ticket quotes a real traceback. QA's verdict comes from executing the
+patch, not from reasoning about whether it looks right.
 
 ---
 
-## Setup
+## Architecture
 
-**1. Install dependencies**
+Two tiers. The supervisor decides *who runs next*; the workers just work.
+
 ```
-pip install -r requirements.txt
-```
-
-**2. Get a free Gemini API key**
-
-Go to https://aistudio.google.com/app/apikey — no credit card needed.
-
-**3. Add your key**
-
-Open `.env` and replace the placeholder:
-```
-GEMINI_API_KEY=your-key-here
-```
-
-**4. Run**
-```
-python server.py
+  human ──run.requested──▶ PM
+                            └──ticket.created──▶ DEV
+                                                  └──patch.submitted──▶ QA
+                                                                         │
+                        ┌────────────────────────────────────────────────┤
+                  qa.passed                                         qa.failed
+                        ▼                                                ▼
+                  SUPERVISOR                                       SUPERVISOR
+                        │                                       (checks budget)
+                 run.completed                             ┌───────────┴──────────┐
+                                                    budget left            budget spent
+                                                           │                      │
+                                                   retry.requested          run.escalated
+                                                           └──▶ DEV (again)
 ```
 
-Open http://localhost:8000 — that's it.
+Dev does **not** subscribe to `qa.failed`. A rejection goes to the supervisor,
+which checks the retry budget and only then re-tasks Dev. The budget is policy,
+and policy lives one tier up.
+
+The ReAct loop is written out in [`scrum/agents/react.py`](scrum/agents/react.py)
+rather than imported, so every Thought/Action/Observation is inspectable — that
+is what drives the office narration and `trace.jsonl`.
+
+Only Dev can write. A reviewer that can edit the code under review is not a
+reviewer. Enforced twice: by the tool dict in code, and by IAM on AWS.
 
 ---
 
-## How to use
+## Running on AWS
 
-1. Open http://localhost:8000
-2. Drag any `.py` file onto the drop zone at the bottom
-3. Hit **RUN ▸**
-4. Watch the agents work — check the side panel tabs for the ticket, diff, and stats
-5. Drop another file and run again anytime
-
----
-
-## Project structure
-
-```
-agentic-scrum/
-├── server.py             # Flask server — the only file you run
-├── orchestrator.py       # pipeline: PM → Dev → QA loop
-├── .env                  # your Gemini API key goes here
-├── requirements.txt
-├── demo.mov              # demo video
-├── agents/
-│   ├── pm_prompt.py      # Michael's system prompt
-│   ├── dev_prompt.py     # Jim's system prompt
-│   └── qa_prompt.py      # Dwight's system prompt
-├── characters/
-│   ├── michael.png
-│   ├── jim.png
-│   └── dwight.png
-├── workspace/
-│   ├── buggy_script.py   # file being analysed (replaced on drop)
-│   ├── ticket.txt        # PM output
-│   ├── patched_script.py # Dev output
-│   ├── qa_review.txt     # QA output
-│   └── state.json        # live state polled by the UI
-└── ui/
-    └── index.html
+```bash
+export GEMINI_API_KEY=...
+./infra/preflight.sh      # read-only checks, costs nothing
+./infra/deploy.sh         # ~8 minutes
+python infra/smoke_test.py
+./infra/teardown.sh       # deletes everything, then proves it
 ```
 
+Needs the AWS CLI and SAM CLI. Install SAM with **pip, not Homebrew** — on an
+Intel Mac, brew builds rust and llvm from source, which takes hours:
+
+```bash
+python3 -m venv ~/.sam-cli-venv
+~/.sam-cli-venv/bin/pip install aws-sam-cli
+ln -sf ~/.sam-cli-venv/bin/sam /usr/local/bin/sam
+```
+
+**Cost:** a week of testing is under $1. Lambda, SNS, SQS and CloudWatch all
+sit in always-free tiers at this volume; the only guaranteed charge is Secrets
+Manager at $0.40/month. No VPC and no NAT gateway anywhere — that is the usual
+way a hobby project becomes $32/month.
+
+Guardrails: a budget alarm, 7-day log retention, a DLQ alarm, and a circuit
+breaker that aborts a run after 60 events.
+
 ---
 
-## Stack
+## Local fallback
 
-- **Gemini 2.5 Flash** — all three agents (free tier, ~1500 req/day)
-- **Flask** — local server, file upload, pipeline trigger
-- **Vanilla HTML/CSS/JS** — no frontend framework
-- **Python** — orchestrator, agent calls, file I/O
+The AWS path and the local path are two implementations of one interface. A
+probe picks: `boto3` importable → resources configured → STS answers. Any
+failure falls back and records why.
+
+```bash
+python orchestrator.py --backends   # show the decision and every check
+curl localhost:8000/backends        # same, as JSON
+```
+
+| | On AWS | Fallback |
+|---|---|---|
+| Event bus | SNS + 4 SQS queues | in-process queues |
+| Compute | 1 Lambda per agent | 1 thread per agent |
+| Artifacts | S3 | `workspace/` |
+| Run state | DynamoDB | a JSON file |
+
+The fallback is a simulator, not a shortcut: it reproduces fan-out filtering,
+visibility timeouts, redelivery and dead-letter queues, so a handler written
+locally survives the swap.
 
 ---
 
-## What's next (side quests)
+## Layout
 
-- Docs agent that writes a `CHANGELOG.md` after every fix
-- Security agent that reviews patches before QA signs off
-- Real code execution — QA runs the patched file and compares output instead of reasoning about it
-- Persistent memory across sessions so agents learn from past fixes
+```
+server.py            entry: the office UI
+orchestrator.py      entry: the CLI
+lambda_handlers.py   entry: AWS Lambda
+
+scrum/
+  config.py          the AWS probe and the fallback decision
+  events.py          event vocabulary + routing table
+  handlers.py        what each agent does — transport-agnostic
+  runtime.py         local adapter: a thread per queue
+  agents/            ReAct loop, tools, reflection, the three workers
+  bus/               SNS+SQS, or in-process
+  store/             S3+DynamoDB, or the workspace directory
+
+infra/               template.yaml, preflight/deploy/teardown, smoke_test
+tests/               61 tests, no credentials, no API calls
+```
+
+`handlers.py` knows nothing about how it was invoked — `runtime.py` and
+`lambda_handlers.py` are both thin adapters over it. That is why the fallback
+is credible rather than a parallel codebase.
+
+---
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -q
+```
+
+61 tests, no credentials and no API calls. The AWS paths are driven through
+botocore's `Stubber`, which asserts the exact API parameters — filter
+attributes, SNS envelope handling, DynamoDB conditions — without an account.
+
+---
+
+## Status
+
+Deployed and verified on AWS (`us-east-1`, 17 Sep 2026). Run
+`1789678748-f1aa7c`: a full PM → Dev → QA cycle through a real SNS topic, four
+SQS queues and six Lambdas, **passing in 46 seconds** on the first attempt.
+
+Two bugs reached production during testing — a DynamoDB conditional-write
+default that differed from the local store, and an IAM policy that was too
+strict in the wrong way. Both are now covered by regression tests (see
+`tests/test_aws_readiness.py` and `tests/test_iam_policy.py`).
+
+Known limits:
+- Agent quality is non-deterministic. In one local run the PM found 3 of 4
+  seeded bugs; on AWS it found all three ticketed ones and QA wrote its own
+  negative-number and empty-list cases unprompted.
+- Code execution is sandboxed (workspace-only, timeout, minimal environment) but
+  is **not** a security boundary for untrusted code.
+- One run at a time locally by design; on AWS, S3 keys are namespaced per run.
+
+---
+
+## What's next
+
+- A Docs or Security agent — should be a new subscription and nothing else.
+  That is the real test of whether the event design earned its keep.
+- Replace QA's judgement with a generated test suite, so PASS means "tests went
+  green", not "the reviewer was convinced".
+- Step Functions for the supervisor: the retry budget is a state machine, and
+  it is currently a state machine written in Python.

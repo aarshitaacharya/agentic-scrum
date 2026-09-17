@@ -202,6 +202,25 @@ async function fetchFile(path) {
 
 let ticketLoaded = false, diffLoaded = false;
 
+// ── Backend badge ────────────────────────────────────────────────
+// Asked once at load. The pipeline runs identically either way — this is
+// purely so you can see at a glance whether the events went through SNS/SQS
+// or through the in-process fallback bus.
+async function showBackend() {
+  const pill = document.getElementById('bpill');
+  if (!pill) return;
+  try {
+    const r = await fetch('/backends');
+    if (!r.ok) return;
+    const b = await r.json();
+    pill.textContent = b.mode === 'aws' ? 'AWS SNS/SQS' : 'LOCAL BUS';
+    pill.className = 'bpill ' + b.mode;
+    pill.title = b.reason + '\n\n' +
+      b.checks.map(c => (c.ok ? '\u2713 ' : '\u2717 ') + c.name + ': ' + c.detail).join('\n');
+  } catch { /* the badge is decoration; never let it break the office */ }
+}
+showBackend();
+
 // ── Main state handler ───────────────────────────────────────────
 function applyState(s) {
   if (s.ts === lastTs) return;

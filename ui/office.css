@@ -246,6 +246,9 @@ h1 {
 @keyframes blink { 50% { opacity: 0.4; } }
 #status-txt { color: var(--text); font-weight: 500; }
 .apill { margin-left: auto; font-size: 10px; padding: 2px 8px; border: 1px solid var(--border); color: var(--muted); border-radius: 10px; }
+.bpill { font-size: 10px; padding: 2px 8px; margin-left: 6px; border: 1px solid var(--border); color: var(--muted); border-radius: 10px; letter-spacing: .5px; cursor: help; }
+.bpill.aws   { color: var(--green); border-color: var(--green); }
+.bpill.local { color: var(--muted); }
 
 /* ── File drop zone ─────────────────────────────────────────── */
 .dropzone {

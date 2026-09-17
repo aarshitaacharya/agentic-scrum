@@ -142,6 +142,9 @@
       <div class="led" id="led"></div>
       <span id="status-txt">Waiting for orchestrator...</span>
       <span class="apill" id="apill"></span>
+      <!-- Which backend the probe chose. Shows LOCAL on a laptop and AWS when
+           SNS/SQS are reachable; hover for the reason the probe gave. -->
+      <span class="bpill" id="bpill" title="">—</span>
     </div>
 
     <input type="file" id="file-input" accept=".py"/>

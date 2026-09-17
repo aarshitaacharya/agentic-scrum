@@ -1,0 +1,568 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Agentic Scrum — event-driven multi-agent bug fixing.
+
+  One SNS topic fans out to one SQS queue per agent, filtered by event type.
+  Each queue drives one Lambda. The supervisor Lambda subscribes to every event
+  and owns the retry budget in DynamoDB; artifacts live in S3.
+
+  Deploy:  sam build && sam deploy --guided
+  Tear down: sam delete   (do this — idle SQS and DynamoDB still cost money)
+
+Parameters:
+  GeminiApiKeySecretArn:
+    Type: String
+    Description: >
+      Secrets Manager ARN holding the Gemini API key. Not a plain parameter:
+      template parameters end up readable in the CloudFormation console and in
+      `describe-stacks` output, which is not where an API key belongs.
+  MaxAttempts:
+    Type: Number
+    Default: 3
+    Description: Dev/QA cycles before the supervisor escalates to a human.
+  BudgetEmail:
+    Type: String
+    Default: aarshita08@gmail.com
+    Description: >
+      Address notified when spend crosses the budget thresholds. Change this
+      before making the repo public — it is a plain string in the template.
+  MonthlyBudgetUsd:
+    Type: Number
+    Default: 10
+    Description: >
+      Monthly spend cap for the alarm. Note this ALERTS, it does not enforce —
+      AWS has no "stop at $10" switch. It is a smoke detector, not a sprinkler.
+  SupervisorReservedConcurrency:
+    Type: Number
+    Default: 1
+    Description: >
+      Serialises the supervisor so the retry counter rarely contends. Set to -1
+      if deployment fails with "reserved concurrency below minimum": accounts
+      with a low concurrency quota cannot reserve any, since AWS requires 100
+      unreserved to remain.
+  MaxConcurrencyPerQueue:
+    Type: Number
+    Default: 2
+    MinValue: 2
+    Description: >
+      Cap on concurrent Lambda invocations per queue. Four queues times this
+      must stay BELOW your account's Lambda concurrency quota, or invocations
+      get throttled, SQS retries them, ApproximateReceiveCount climbs, and
+      perfectly good messages land in the DLQ looking like a bug.
+      New AWS accounts are capped at 10 concurrent executions, so the default
+      of 2 (4 x 2 = 8, leaving headroom for the HTTP functions) is sized for
+      exactly that. Check yours:
+        aws service-quotas get-service-quota --service-code lambda --quota-code L-B99A9384
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+    Description: >
+      CloudWatch log retention. The default without this is "never expire",
+      which is how a finished project keeps billing you for logs forever.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    MemorySize: 512          # these are I/O-bound; more RAM buys CPU we do not use
+    # An agent turn is several sequential LLM calls. 5 minutes is generous but
+    # a timeout mid-turn wastes every token spent so far.
+    Timeout: 300
+    # x86_64 rather than arm64: the build machine is an Intel Mac, and building
+    # arm64 wheels there needs Docker emulation that is slow and prone to
+    # failing on native extensions (grpcio, pydantic-core). Graviton is ~20%
+    # cheaper per GB-second, which at this volume is a rounding error on zero.
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        AGENTIC_SCRUM_BACKEND: aws     # no local fallback inside Lambda — fail loudly
+        SCRUM_TOPIC_ARN: !Ref AgentTopic
+        SCRUM_BUCKET: !Ref ArtifactBucket
+        SCRUM_STATE_TABLE: !Ref RunStateTable
+        SCRUM_MAX_ATTEMPTS: !Ref MaxAttempts
+        GEMINI_API_KEY_SECRET_ARN: !Ref GeminiApiKeySecretArn
+        SCRUM_QUEUE_PM: !Ref PmQueue
+        SCRUM_QUEUE_DEV: !Ref DevQueue
+        SCRUM_QUEUE_QA: !Ref QaQueue
+        SCRUM_QUEUE_SUPERVISOR: !Ref SupervisorQueue
+        # SCRUM_UI_STATE_FILE is deliberately NOT set. The UI read model is a
+        # local file for the office demo; in Lambda the working directory is
+        # read-only, so ui_state detects that once and logs the state as JSON
+        # instead. See ui_state._write().
+
+Conditions:
+  # Lets SupervisorReservedConcurrency=-1 mean "do not reserve at all", for
+  # accounts whose concurrency quota is too low to allow any reservation.
+  ReserveSupervisorConcurrency: !Not [!Equals [!Ref SupervisorReservedConcurrency, -1]]
+
+Resources:
+
+  # ── The topic ───────────────────────────────────────────────────────────────
+  # Standard, not FIFO. FIFO would give ordering and exactly-once, but caps
+  # throughput and — the real problem — forces a MessageGroupId that would
+  # serialise every run against every other run. Ordering is not needed here
+  # because the supervisor treats `attempt` as authoritative rather than
+  # trusting arrival order.
+  AgentTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: agentic-scrum-events
+      DisplayName: Agentic Scrum agent handoffs
+
+  # ── Dead letter queue ───────────────────────────────────────────────────────
+  # Shared by all four agent queues. A message that fails maxReceiveCount times
+  # lands here instead of redelivering forever. Without it, one poison message
+  # — a malformed event, a file that makes an agent throw every time — becomes
+  # an infinite Lambda invocation loop with a real bill attached.
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: agentic-scrum-dlq
+      MessageRetentionPeriod: 1209600   # 14 days, the maximum — you want time to look
+
+  # ── One queue per agent ─────────────────────────────────────────────────────
+  # Why a queue between the topic and the Lambda at all, rather than
+  # subscribing Lambda directly to SNS:
+  #   * retries. SNS->Lambda retries twice and then drops the message. SQS
+  #     holds it until it is acked or the DLQ takes it.
+  #   * buffering. Ten dropped files at once queue up instead of trying to run
+  #     ten concurrent agents and hitting the Gemini rate limit.
+  #   * replay. Messages sit in the queue while you fix and redeploy a broken
+  #     handler, rather than being lost during the outage.
+  #
+  # VisibilityTimeout is 360s against a 300s function timeout. It MUST be the
+  # larger of the two: if it were shorter, SQS would hand the same message to a
+  # second Lambda while the first was still working, and two Dev agents would
+  # patch the same file simultaneously.
+
+  PmQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: agentic-scrum-pm
+      VisibilityTimeout: 360
+      ReceiveMessageWaitTimeSeconds: 20        # long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  DevQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: agentic-scrum-dev
+      VisibilityTimeout: 360
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  QaQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: agentic-scrum-qa
+      VisibilityTimeout: 360
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  SupervisorQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: agentic-scrum-supervisor
+      VisibilityTimeout: 360
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  # ── Subscriptions: this is the routing table ────────────────────────────────
+  # FilterPolicy mirrors SUBSCRIPTIONS in events.py exactly. Filtering happens
+  # at the topic, so a queue is never charged for a message it did not want.
+  # infra/check_routing.py asserts these two stay in sync.
+  #
+  # RawMessageDelivery: true so the queue body is our JSON rather than an SNS
+  # envelope wrapping it. The consumer handles both, but raw keeps the messages
+  # smaller and the CloudWatch logs readable.
+
+  PmSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AgentTopic
+      Protocol: sqs
+      Endpoint: !GetAtt PmQueue.Arn
+      RawMessageDelivery: true
+      FilterPolicy:
+        event_type: [run.requested]
+
+  DevSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AgentTopic
+      Protocol: sqs
+      Endpoint: !GetAtt DevQueue.Arn
+      RawMessageDelivery: true
+      FilterPolicy:
+        # Note: NOT qa.failed. A rejection goes to the supervisor, which checks
+        # the retry budget before re-tasking Dev via retry.requested. Dev
+        # listening to qa.failed directly would retry forever.
+        event_type: [ticket.created, retry.requested]
+
+  QaSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AgentTopic
+      Protocol: sqs
+      Endpoint: !GetAtt QaQueue.Arn
+      RawMessageDelivery: true
+      FilterPolicy:
+        event_type: [patch.submitted]
+
+  SupervisorSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AgentTopic
+      Protocol: sqs
+      Endpoint: !GetAtt SupervisorQueue.Arn
+      RawMessageDelivery: true
+      FilterPolicy:
+        event_type:
+          - run.requested
+          - ticket.created
+          - patch.submitted
+          - qa.passed
+          - qa.failed
+          - retry.requested
+          - run.completed
+          - run.escalated
+
+  # ── Let SNS write to the queues ─────────────────────────────────────────────
+  # A subscription is not permission. Without this policy SNS silently fails to
+  # deliver and the queues stay empty, which is a genuinely confusing hour the
+  # first time you meet it.
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref PmQueue, !Ref DevQueue, !Ref QaQueue, !Ref SupervisorQueue]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: sns.amazonaws.com}
+            Action: sqs:SendMessage
+            Resource: '*'
+            Condition:
+              ArnEquals: {aws:SourceArn: !Ref AgentTopic}
+
+  # ── Storage ─────────────────────────────────────────────────────────────────
+
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'agentic-scrum-artifacts-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      LifecycleConfiguration:
+        Rules:
+          # Runs are debugging material, not records. Thirty days is plenty and
+          # it stops a demo project quietly accruing storage charges forever.
+          - Id: expire-old-runs
+            Status: Enabled
+            Prefix: runs/
+            ExpirationInDays: 30
+
+  RunStateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: agentic-scrum-runs
+      # On-demand: this is spiky, low-volume, and provisioned capacity on an
+      # idle demo is money set on fire.
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: run_id, AttributeType: S}
+      KeySchema:
+        - {AttributeName: run_id, KeyType: HASH}
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  # ── The agent functions ─────────────────────────────────────────────────────
+  # BatchSize is 1 throughout. Batching would be cheaper on invocations, but an
+  # agent turn takes minutes: ten messages in one invocation means the tenth
+  # waits for the other nine and the function times out. One message, one
+  # invocation, maximum parallelism.
+
+  PmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-pm
+      Handler: lambda_handlers.pm_handler
+      CodeUri: ../
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt PmQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig:
+              MaximumConcurrency: !Ref MaxConcurrencyPerQueue
+      Policies:
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AgentTopic.TopicName}
+        - S3CrudPolicy: {BucketName: !Ref ArtifactBucket}
+        - DynamoDBCrudPolicy: {TableName: !Ref RunStateTable}
+        - AWSSecretsManagerGetSecretValuePolicy: {SecretArn: !Ref GeminiApiKeySecretArn}
+
+  DevFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-dev
+      Handler: lambda_handlers.dev_handler
+      CodeUri: ../
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DevQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig:
+              MaximumConcurrency: !Ref MaxConcurrencyPerQueue
+      Policies:
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AgentTopic.TopicName}
+        - S3CrudPolicy: {BucketName: !Ref ArtifactBucket}
+        - DynamoDBCrudPolicy: {TableName: !Ref RunStateTable}
+        - AWSSecretsManagerGetSecretValuePolicy: {SecretArn: !Ref GeminiApiKeySecretArn}
+
+  QaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-qa
+      Handler: lambda_handlers.qa_handler
+      CodeUri: ../
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt QaQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig:
+              MaximumConcurrency: !Ref MaxConcurrencyPerQueue
+      Policies:
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AgentTopic.TopicName}
+        - DynamoDBCrudPolicy: {TableName: !Ref RunStateTable}
+        # Least privilege scoped to the ROLE, not to a blanket read/write flag.
+        #
+        # S3ReadPolicy alone was wrong and broke the deploy: QA has to write its
+        # own verdict (qa_review.txt) and append to the trace, so read-only made
+        # it AccessDenied on every run. S3CrudPolicy would be the lazy fix, but
+        # it would also let QA overwrite patched_script.py — and a reviewer that
+        # can silently edit the code under review is not a reviewer.
+        #
+        # So: read anything in a run, write ONLY the two objects QA owns. This
+        # is the same restriction the tool belt enforces in code (QA has no
+        # write_patch tool), enforced a second time at the IAM layer, where a
+        # prompt-injected agent cannot talk its way around it.
+        - Statement:
+            - Effect: Allow
+              Action: [s3:GetObject, s3:ListBucket]
+              Resource:
+                - !Sub 'arn:aws:s3:::${ArtifactBucket}'
+                - !Sub 'arn:aws:s3:::${ArtifactBucket}/*'
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource:
+                - !Sub 'arn:aws:s3:::${ArtifactBucket}/runs/*/qa_review.txt'
+                - !Sub 'arn:aws:s3:::${ArtifactBucket}/runs/*/trace.jsonl' 
+        - AWSSecretsManagerGetSecretValuePolicy: {SecretArn: !Ref GeminiApiKeySecretArn}
+
+  SupervisorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-supervisor
+      Handler: lambda_handlers.supervisor_handler
+      CodeUri: ../
+      Timeout: 60                 # no LLM calls here, just policy and a write
+      # One at a time. The supervisor is the only stateful consumer, and
+      # serialising it turns conditional-write contention on the retry counter
+      # from routine into rare.
+      ReservedConcurrentExecutions: !If
+        - ReserveSupervisorConcurrency
+        - !Ref SupervisorReservedConcurrency
+        - !Ref AWS::NoValue
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SupervisorQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig:
+              MaximumConcurrency: !Ref MaxConcurrencyPerQueue
+      Policies:
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AgentTopic.TopicName}
+        - S3CrudPolicy: {BucketName: !Ref ArtifactBucket}
+        - DynamoDBCrudPolicy: {TableName: !Ref RunStateTable}
+
+  # ── HTTP entry point ────────────────────────────────────────────────────────
+
+  StartRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-start-run
+      Handler: lambda_handlers.start_run_handler
+      CodeUri: ../
+      Timeout: 10                 # publishes and returns 202; never waits
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /runs
+            Method: POST
+      Policies:
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AgentTopic.TopicName}
+
+  GetRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: agentic-scrum-get-run
+      Handler: lambda_handlers.get_run_handler
+      CodeUri: ../
+      Timeout: 10
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /runs/{run_id}
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy: {TableName: !Ref RunStateTable}
+
+  # ── Alarms ──────────────────────────────────────────────────────────────────
+  # The one alarm worth having on day one. An event-driven system fails
+  # silently: nothing crashes, work just stops moving. A non-empty DLQ is the
+  # signal that something is stuck.
+  DeadLetterAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: agentic-scrum-dlq-not-empty
+      AlarmDescription: Messages are failing repeatedly and landing in the DLQ.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - {Name: QueueName, Value: !GetAtt DeadLetterQueue.QueueName}
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ── Log retention ───────────────────────────────────────────────────────────
+  # Lambda creates its own log group on first invocation, with retention set to
+  # "never expire". Declaring them here instead means they expire on schedule
+  # AND get deleted with the stack — an auto-created group survives `sam delete`
+  # and keeps costing you, which is a genuinely annoying thing to discover
+  # months later.
+  #
+  # The name must match /aws/lambda/<function name> exactly, which is why every
+  # function above sets an explicit FunctionName.
+
+  PmLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${PmFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  DevLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${DevFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  QaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${QaFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  SupervisorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${SupervisorFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  StartRunLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${StartRunFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  GetRunLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${GetRunFunction}'
+      RetentionInDays: !Ref LogRetentionDays
+
+  # ── Cost guardrail ──────────────────────────────────────────────────────────
+  # This ALERTS, it does not enforce. AWS has no "stop everything at $10"
+  # switch, and anyone who tells you otherwise is describing a Lambda that
+  # deletes your resources. Treat it as a smoke detector: at 50% of budget you
+  # get a heads-up, at 90% of FORECAST you hear about it before it happens.
+  #
+  # The email subscription needs confirming — check your inbox after deploying,
+  # or the alarm is decorative.
+  CostBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: agentic-scrum-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetUsd
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 50            # percent of budget
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetEmail
+        - Notification:
+            # Forecast, not actual: this is the one that warns you while you can
+            # still do something about it.
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 90
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetEmail
+
+Outputs:
+  TopicArn:
+    Description: Publish run.requested here to start a run.
+    Value: !Ref AgentTopic
+  ApiUrl:
+    Description: POST /runs to start, GET /runs/{run_id} to poll.
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  ArtifactBucket:
+    Value: !Ref ArtifactBucket
+  DeadLetterQueueUrl:
+    Value: !Ref DeadLetterQueue
+  LocalEnv:
+    Description: Export these to point a local run at the deployed stack.
+    Value: !Sub |
+      export SCRUM_TOPIC_ARN=${AgentTopic}
+      export SCRUM_BUCKET=${ArtifactBucket}
+      export SCRUM_STATE_TABLE=${RunStateTable}
+      export AWS_REGION=${AWS::Region}
